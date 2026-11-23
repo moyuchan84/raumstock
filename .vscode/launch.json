@@ -1,0 +1,38 @@
+{
+  "version": "0.2.0",
+  "configurations": [
+    {
+      "name": "Prototype (Chrome)",
+      "type": "chrome",
+      "request": "launch",
+      "url": "http://localhost:8000",
+      "webRoot": "${workspaceFolder}/prototype",
+      "preLaunchTask": "serve-prototype"
+    },
+    {
+      "name": "Prototype (Edge)",
+      "type": "msedge",
+      "request": "launch",
+      "url": "http://localhost:8000",
+      "webRoot": "${workspaceFolder}/prototype",
+      "preLaunchTask": "serve-prototype"
+    },
+    {
+      "name": "Build data (node scripts/build-data.mjs)",
+      "type": "node",
+      "request": "launch",
+      "program": "${workspaceFolder}/scripts/build-data.mjs",
+      "cwd": "${workspaceFolder}",
+      "skipFiles": ["<node_internals>/**"]
+    },
+    {
+      "name": "Static server (node scripts/serve.mjs)",
+      "type": "node",
+      "request": "launch",
+      "program": "${workspaceFolder}/scripts/serve.mjs",
+      "args": ["8000"],
+      "cwd": "${workspaceFolder}",
+      "skipFiles": ["<node_internals>/**"]
+    }
+  ]
+}
