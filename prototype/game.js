@@ -219,13 +219,14 @@
   function updateCity() {
     const el = $("#city");
     el.hidden = S.view !== "home";
+    $("#top").hidden = S.view === "stage" || S.view === "train"; // 스토리 날짜·자산은 스토리 화면에서만
     window.RAUM_CITY?.setCaps(caps());
   }
   window.addEventListener("raum-city", updateCity);
   function render() {
     renderTop();
     updateCity();
-    const v = { home: viewHome, watch: viewWatch, stock: viewStock, account: viewAccount, learn: viewLearn, train: () => window.RAUM_TRAIN.view(S) }[S.view] || viewHome;
+    const v = { home: viewHome, watch: viewWatch, stock: viewStock, account: viewAccount, learn: viewLearn, train: () => window.RAUM_TRAIN.view(S), stage: () => window.RAUM_STAGE.view(S) }[S.view] || viewHome;
     $("#view").innerHTML = v();
     document.querySelectorAll("[data-nav]").forEach((b) => b.classList.toggle("on", b.dataset.nav === S.view || (S.view === "stock" && b.dataset.nav === "watch")));
     renderCoach();
@@ -266,10 +267,11 @@
           const s = chapterState(i);
           return `<li class="chap ${s}"><span class="tw"><img class="thumb" src="img/cover-${c.id}.webp" alt="" loading="lazy"><span class="no">${s === "done" ? "✓" : c.no}</span></span><div><b>${c.title}</b><small>${c.sub}</small><small class="muted">${c.period}</small></div><span class="tag">${s === "done" ? "완료" : s === "now" ? "진행 중" : "잠김"}</span></li>`;
         }).join("")}
+        <li class="chap stagecard"><span class="tw"><span class="thumb tthumb">🏁</span></span><div><b>스테이지 & 랜덤 도전</b><small>실제 상황 4개 · 가상 상황 7개 · 매번 다른 랜덤 판</small><small class="muted">모은 별 ${window.RAUM_STAGE.counts(S)}개 · 언제든 가능</small></div><button class="tag link" data-nav="stage">열기 ›</button></li>
         <li class="chap train"><span class="tw"><span class="thumb tthumb">🎯</span></span><div><b>실전 훈련 · 진실과 오해, 차트, 선택의 순간</b><small>제로섬? PER? 뉴스? 눌림목·지지·저항 · 손절 · 분할 매수·매도 · 목표 수익</small><small class="muted">${window.RAUM_TRAIN.counts(S).done}/${window.RAUM_TRAIN.counts(S).total} 완료 · 언제든 가능</small></div><button class="tag link" data-nav="train">열기 ›</button></li>
         <li class="chap free"><span class="tw"><img class="thumb" src="img/cover-c8.webp" alt="" loading="lazy"><span class="no">8</span></span><div><b>나만의 포트폴리오 · 2020년 자유 투자</b><small>ETF · 채권 · 금 · 원유 · 자산배분 · 시장의 4계절 · 신용</small><small class="muted">주 단위로 1년 전체 · 언제든 플레이 가능</small></div><a class="tag link" href="free.html">열기 ›</a></li>
       </ol>
-      <p class="foot">가격은 실제 일별 수정 종가(분할·배당 반영), 재무 숫자는 SEC 10-K 공시, 환율은 1달러 = 1,200원 고정이에요. 투자 권유가 아닌 교육용 시뮬레이션이에요. <button class="linkbtn" data-act="reset">처음부터 다시</button></p>`;
+      <p class="foot"><button class="linkbtn" data-act="splash">시작 화면 보기</button> · 가격은 실제 일별 수정 종가(분할·배당 반영), 재무 숫자는 SEC 10-K 공시, 환율은 1달러 = 1,200원 고정이에요. 투자 권유가 아닌 교육용 시뮬레이션이에요. <button class="linkbtn" data-act="reset">처음부터 다시</button></p>`;
   }
 
   function viewWatch() {
@@ -538,6 +540,8 @@
     if (!b) return;
     const d = b.dataset;
     if (d.nav) return go(d.nav);
+    if (d.stg) { window.RAUM_STAGE.click(d.stg, S); render(); if (!/^(sel|buy|sell)/.test(d.stg)) window.scrollTo(0, 0); return; }
+    if (d.splash) return splashGo(d.splash);
     if (d.train) { window.RAUM_TRAIN.click(d.train, S); render(); return window.scrollTo(0, 0); }
     if (d.sym) return go("stock", { sym: d.sym, tab: S.tab === "fin" && !FIN[d.sym] ? "chart" : S.tab });
     if (d.tab) { S.tab = d.tab; render(); return emit({ type: "tab" }); }
@@ -599,6 +603,7 @@
     }
     if (act === "day") return advance(1, step()?.free);
     if (act === "week") return advance(5, step()?.free);
+    if (act === "splash") return showSplash();
     if (act === "kid") { S.kid = !S.kid; if ($("#sheet").classList.contains("open") && ord) renderOrder(); return render(); }
     if (act === "free-time") { S.freeMode = true; return go("watch"); }
     if (act === "reset") {
@@ -612,6 +617,20 @@
   });
   $("#scrim").addEventListener("click", closeSheet);
 
+  // ---------- 스플래시 ----------
+  function showSplash() { const el = $("#splash"); el.hidden = false; requestAnimationFrame(() => el.classList.add("on")); }
+  function splashGo(mode) {
+    sessionStorage.setItem("raum-splash", "1");
+    const el = $("#splash");
+    el.classList.remove("on");
+    setTimeout(() => (el.hidden = true), 350);
+    if (mode === "story") { const s = step(); return go(s?.task || s?.free ? "watch" : "home"); }
+    if (mode === "stage") { window.RAUM_STAGE.go("map"); return go("stage"); }
+    if (mode === "random") { window.RAUM_STAGE.random(S, Math.random() < 0.5); return go("stage"); }
+    return go(mode);
+  }
+
   autoSteps();
   render();
+  if (!sessionStorage.getItem("raum-splash")) showSplash();
 })();
