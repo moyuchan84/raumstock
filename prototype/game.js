@@ -220,19 +220,19 @@
   function updateCity() {
     const el = $("#city");
     el.hidden = S.view !== "home";
-    $("#top").hidden = S.view === "stage" || S.view === "train" || S.view === "mp"; // 스토리 날짜·자산은 스토리 화면에서만
+    $("#top").hidden = ["stage", "train", "mp", "teach"].includes(S.view); // 스토리 날짜·자산은 스토리 화면에서만
     window.RAUM_CITY?.setCaps(caps());
   }
   window.addEventListener("raum-city", updateCity);
   function render() {
     renderTop();
     updateCity();
-    const v = { home: viewHome, watch: viewWatch, stock: viewStock, account: viewAccount, learn: viewLearn, train: () => window.RAUM_TRAIN.view(S), stage: () => window.RAUM_STAGE.view(S), mp: () => window.RAUM_MP.view(S) }[S.view] || viewHome;
+    const v = { home: viewHome, watch: viewWatch, stock: viewStock, account: viewAccount, learn: viewLearn, train: () => window.RAUM_TRAIN.view(S), stage: () => window.RAUM_STAGE.view(S), mp: () => window.RAUM_MP.view(S), teach: () => window.RAUM_TEACH.view(S) }[S.view] || viewHome;
     $("#view").innerHTML = v();
     document.querySelectorAll("[data-nav]").forEach((b) => b.classList.toggle("on", b.dataset.nav === S.view || (S.view === "stock" && b.dataset.nav === "watch")));
     renderCoach();
     document.querySelectorAll(".pulse").forEach((e) => e.classList.remove("pulse"));
-    const s = ["stage", "train", "mp"].includes(S.view) ? null : step();
+    const s = ["stage", "train", "mp", "teach"].includes(S.view) ? null : step();
     if (s?.pulse) document.querySelectorAll(s.pulse).forEach((e) => e.classList.add("pulse"));
     save();
   }
@@ -268,6 +268,7 @@
           const s = chapterState(i);
           return `<li class="chap ${s}"><span class="tw"><img class="thumb" src="img/cover-${c.id}.webp" alt="" loading="lazy"><span class="no">${s === "done" ? "✓" : c.no}</span></span><div><b>${c.title}</b><small>${c.sub}</small><small class="muted">${c.period}</small></div><span class="tag">${s === "done" ? "완료" : s === "now" ? "진행 중" : "잠김"}</span></li>`;
         }).join("")}
+        <li class="chap mpcard teachcard"><span class="tw"><span class="thumb tthumb">🏫</span></span><div><b>교실 모드 · 선생님과 학생</b><small>한 반이 같은 시장에서 연습 · 결과 QR 모아 순위·분포·토론 질문</small><small class="muted">엑셀 내려받기·인쇄 · 서버와 회원가입 없음</small></div><button class="tag link" data-nav="teach">열기 ›</button></li>
         <li class="chap mpcard"><span class="tw"><span class="thumb tthumb">👥</span></span><div><b>함께 하기 · 근거리 대전</b><small>서버 없이 같은 Wi-Fi에서 QR로 연결 · 같은 판 코드 대결</small><small class="muted">친구·가족과 같은 시장에서 겨뤄요</small></div><button class="tag link" data-nav="mp">열기 ›</button></li>
         <li class="chap stagecard"><span class="tw"><span class="thumb tthumb">🏁</span></span><div><b>스테이지 & 랜덤 도전</b><small>⏳ 타임머신: 1987 블랙 먼데이부터 2023 AI 랠리까지 14개 · 가상 7개 · 랜덤</small><small class="muted">모은 별 ${window.RAUM_STAGE.counts(S)}개 · 언제든 가능</small></div><button class="tag link" data-nav="stage">열기 ›</button></li>
         <li class="chap train"><span class="tw"><span class="thumb tthumb">🎯</span></span><div><b>실전 훈련 · 진실과 오해, 차트, 선택의 순간</b><small>제로섬? PER? 뉴스? 눌림목·지지·저항 · 손절 · 분할 매수·매도 · 목표 수익</small><small class="muted">${window.RAUM_TRAIN.counts(S).done}/${window.RAUM_TRAIN.counts(S).total} 완료 · 언제든 가능</small></div><button class="tag link" data-nav="train">열기 ›</button></li>
@@ -442,7 +443,7 @@
   function renderCoach() {
     const box = $("#coach");
     // 스토리 코치는 스토리 화면에서만 (스테이지·훈련·함께 하기에서는 숨김)
-    const s = ["stage", "train", "mp"].includes(S.view) ? null : step();
+    const s = ["stage", "train", "mp", "teach"].includes(S.view) ? null : step();
     if (!s) { box.className = "coach hide"; box.innerHTML = ""; renderTimebar(s); return; }
     const ch = chapter();
     const head = `<div class="c-head">${COACH_AV}<span>${ch.no}장 · ${ch.title}</span>${kidToggle()}<small>${S.step + 1}/${ch.steps.length}</small></div>`;
@@ -478,7 +479,7 @@
   }
   function renderTimebar(s) {
     const bar = $("#timebar");
-    if (["stage", "train", "mp"].includes(S.view)) { bar.hidden = true; return; }
+    if (["stage", "train", "mp", "teach"].includes(S.view)) { bar.hidden = true; return; }
     const free = s?.free || (storyDone() && S.freeMode);
     if (!free || S.di >= LAST_DI) { bar.hidden = true; return; }
     bar.hidden = false;
@@ -541,11 +542,12 @@
     emit({ type: "view" });
   }
   document.addEventListener("click", (e) => {
-    const b = e.target.closest("button, [data-nav]");
+    const b = e.target.closest("button, [data-nav], [data-teach]");
     if (!b) return;
     const d = b.dataset;
     if (d.nav) return go(d.nav);
     if (d.mp) { window.RAUM_MP.click(d.mp, S); return; }
+    if (d.teach) { window.RAUM_TEACH.click(d.teach, S); return; }
     if (d.stg) { window.RAUM_STAGE.click(d.stg, S); window.RAUM_MP?.afterAction(); render(); if (!/^(sel|buy|sell)/.test(d.stg)) window.scrollTo(0, 0); return; }
     if (d.splash) return splashGo(d.splash);
     if (d.train) { window.RAUM_TRAIN.click(d.train, S); render(); return window.scrollTo(0, 0); }
@@ -625,6 +627,7 @@
 
   window.RAUM_STATE = () => S;
   window.RAUM_RENDER = () => render();
+  window.RAUM_TOAST = (m) => toast(m);
 
   // ---------- 스플래시 ----------
   function showSplash() { const el = $("#splash"); el.hidden = false; requestAnimationFrame(() => el.classList.add("on")); }
@@ -640,6 +643,8 @@
   }
 
   autoSteps();
+  const viaClass = window.RAUM_TEACH?.fromHash(S);
+  if (viaClass) { S.view = "teach"; sessionStorage.setItem("raum-splash", "1"); }
   render();
   if (!sessionStorage.getItem("raum-splash")) showSplash();
 })();

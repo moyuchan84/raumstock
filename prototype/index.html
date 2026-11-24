@@ -321,6 +321,29 @@ dd.kid { color: #ffd98a; font-size: .85rem; }
 .trade-btns2 { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
 .sel, .fld input { width: 100%; font: inherit; padding: 10px 12px; border-radius: 12px; border: 1px solid var(--line); background: var(--surface); color: var(--text); }
 .code { color: var(--accent); letter-spacing: .03em; }
+.chap.teachcard { border-color: color-mix(in srgb, var(--mint) 45%, var(--line)); }
+.sp-modes .sp-teach { background: linear-gradient(135deg, #17463f, #1b2a4d); }
+.tcnt { font-size: .9rem; color: var(--muted); font-weight: 500; }
+.thist { display: grid; gap: 4px; }
+.thist .hrow { display: grid; grid-template-columns: 78px 1fr 26px; gap: 8px; align-items: center; font-size: .8rem; }
+.thist i { display: block; height: 14px; border-radius: 4px; min-width: 2px; } .thist i.dn { background: var(--down); } .thist i.upb { background: var(--up); }
+.thist b { text-align: right; }
+.tins, .tqs { display: grid; gap: 8px; } .tins li, .tqs li { line-height: 1.6; }
+.tsort { float: right; display: inline-flex; gap: 4px; } .tag.on { background: var(--accent); color: #fff; }
+.ttable { overflow-x: auto; } .ttable table { width: 100%; border-collapse: collapse; font-size: .82rem; white-space: nowrap; }
+.ttable th, .ttable td { padding: 6px 6px; border-bottom: 1px solid var(--line); text-align: left; } .ttable th { color: var(--muted); font-weight: 600; } .ttable .st { color: var(--accent); }
+.tguide summary { cursor: pointer; } .tguide[open] summary { margin-bottom: 8px; }
+.tsubmit { margin-top: 4px; }
+.tproj { position: fixed; inset: 0; z-index: 90; background: #fff; color: #111; display: grid; place-content: center; justify-items: center; gap: 14px; padding: 24px; text-align: center; cursor: pointer; }
+.tproj .qr { width: min(80vmin, 520px); } .tproj .pk { font-size: 1.2rem; font-weight: 700; } .tproj .pcode { font: 700 2rem ui-monospace, monospace; letter-spacing: .06em; color: #2b3fd6; }
+.tproj.rank { background: var(--bg); color: var(--text); } .tproj.rank .mpboard { width: min(560px, 92vw); text-align: left; } .tproj.rank .mpboard li { font-size: 1.05rem; padding: 10px 12px; }
+@media print {
+  body { background: #fff !important; color: #000 !important; }
+  .tabbar, #top, .dock, #city, #toast, #splash, .noprint, .hero, .tcard:not(.print-area) { display: none !important; }
+  .print-area { border: 0 !important; background: #fff !important; color: #000 !important; }
+  .print-area .up { color: #c00 !important; } .print-area .down { color: #0645ad !important; }
+  .thist i.dn { background: #6b8fd6 !important; } .thist i.upb { background: #e07a7a !important; } * { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+}
 .chap.stagecard { border-color: color-mix(in srgb, #a98bff 50%, var(--line)); }
 @media (prefers-reduced-motion: reduce) { .sp-row, .coin3d { animation: none; } }
 
@@ -354,6 +377,7 @@ dd.kid { color: #ffd98a; font-size: .85rem; }
       <button data-splash="stage"><span>🏁</span><b>스테이지</b><small>1987 → 2023 실제 14 · 가상 7</small></button>
       <button data-splash="random"><span>🎲</span><b>랜덤 도전</b><small>실제 또는 가상, 매번 다르게</small></button>
       <button data-splash="train"><span>🎯</span><b>실전 훈련</b><small>진실과 오해 · 선택의 순간</small></button>
+      <button data-splash="teach" class="sp-mp sp-teach"><span>🏫</span><b>교실 모드</b><small>선생님과 반 전체가 함께</small></button>
       <button data-splash="mp" class="sp-mp"><span>👥</span><b>함께 하기</b><small>서버 없이 근거리 대전 · 코드 대결</small></button>
     </div>
     <p class="sp-note">교육용 시뮬레이션이에요. 투자 권유가 아니에요.</p>
@@ -372,6 +396,7 @@ dd.kid { color: #ffd98a; font-size: .85rem; }
 <script src="stages-hist.js"></script>
 <script src="stage.js"></script>
 <script src="mp.js"></script>
+<script src="teach.js"></script>
 <script src="game.js"></script>
 <script type="module">
   // 홈 화면 3D 마켓 시티: 빌딩 높이 = 그날 시가총액 (game.js가 날짜가 바뀔 때마다 setCaps 호출)
