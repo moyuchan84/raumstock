@@ -338,7 +338,7 @@ window.RAUM_STAGE = (() => {
     const story = i === d.start && run.intro && !run.hidden ? `<article class="newscard fresh story"><span class="ntag">⏳ 타임머신 도착 · ${run.year}년</span><p>${run.intro}</p>${kidBox(S, run.kidIntro)}</article>` : "";
     const todayNews = Object.entries(d.news).filter(([k]) => Number(k) <= i && Number(k) > i - 5).flatMap(([k, arr]) => arr.map((n) => ({ ...n, k: Number(k) }))).reverse();
     return `<div class="splay">
-      <div class="shead"><button class="tback" data-stg="map">‹ 스테이지</button><span class="stitle">${run.icon || "🎲"} ${run.title}</span><span class="sday">${d.label(i)} · ${left}일 남음</span></div>
+      <div class="shead"><button class="tback" data-stg="map">‹ 스테이지</button><span class="stitle">${run.cls ? "🏫 " : ""}${run.icon || "🎲"} ${run.title}</span><span class="sday">${d.label(i)} · ${left}일 남음</span></div>
       <div class="sbar"><div><small>내 자산</small><b>${won(v)}</b><span class="${cls(r)}">${pct(r)}</span></div><div><small>시장(${name(d, d.index)})</small><b class="${cls(ir)}">${pct(ir)}</b></div><div><small>거래</small><b>${run.trades}번</b></div></div>
       ${story}
       <div class="chips sassets">${d.assets.map((a) => { const c = price(d, a.sym, i) / price(d, a.sym, i - 1) - 1; return `<button class="achip ${a.sym === s ? "on" : ""}" data-stg="sel:${a.sym}"><i style="background:${a.color}">${a.icon}</i>${a.name}<small class="${cls(c)}">${pct(c)}</small></button>`; }).join("")}</div>
@@ -384,8 +384,8 @@ window.RAUM_STAGE = (() => {
       <ul class="orders">${rows.map(({ a, r }) => `<li><i class="dotc" style="background:${a.color}"></i>${a.name} <b class="${cls(r)}" style="margin-left:auto">${pct(r)}</b></li>`).join("")}</ul>
       <p class="note">${tip}</p>
       ${kidBox(S, run.real ? "진짜 있었던 일로 연습했어요. 같은 일이 똑같이 다시 일어나지는 않지만, 비슷한 상황에서 사람들이 어떻게 움직이는지 배울 수 있어요." : "이번 시장은 만든 이야기였어요. 그래도 '금리가 오르면 채권이 내려간다', '기름값이 오르면 항공사가 힘들다' 같은 원리는 실제와 같아요.")}
-      ${run.mp && window.RAUM_MP ? window.RAUM_MP.finalBoard(S) : `<div class="tnav"><button class="btn" data-stg="map">스테이지</button><button class="btn primary" data-stg="again">${run.random ? "🎲 한 판 더" : "다시 도전"}</button></div>`}
-      ${run.code && !run.mp ? `<p class="small muted">같은 판 코드 <b class="code">${run.code}</b> · 친구에게 결과 <b>${pct(R.r)} ${stars(R.stars)}</b>를 보여 주세요.</p>` : ""}
+      ${run.cls && window.RAUM_TEACH ? window.RAUM_TEACH.submitBlock(S) : run.mp && window.RAUM_MP ? window.RAUM_MP.finalBoard(S) : `<div class="tnav"><button class="btn" data-stg="map">스테이지</button><button class="btn primary" data-stg="again">${run.random ? "🎲 한 판 더" : "다시 도전"}</button></div>`}
+      ${run.code && !run.mp && !run.cls ? `<p class="small muted">같은 판 코드 <b class="code">${run.code}</b> · 친구에게 결과 <b>${pct(R.r)} ${stars(R.stars)}</b>를 보여 주세요.</p>` : ""}
     </section>`;
   }
   function view(S) {

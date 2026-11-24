@@ -151,13 +151,13 @@ window.RAUM_MP = (() => {
   function afterAction() { if (M.role === "guest") reportState(); if (M.role === "host") broadcastBoard(); }
 
   // ---------- QR ----------
-  async function qrImg(text) {
+  async function qrImg(text, px = 260) {
     try {
       const qrcode = await qrLib();
       const q = qrcode(0, "L");
       q.addData(text);
       q.make();
-      return q.createDataURL(Math.max(2, Math.floor(260 / q.getModuleCount())), 2);
+      return q.createDataURL(Math.max(2, Math.floor(px / q.getModuleCount())), 2);
     } catch { return null; }
   }
   let qrCache = { text: "", url: null };
@@ -263,7 +263,8 @@ window.RAUM_MP = (() => {
         <button class="btn" data-mp="makecode">코드 만들고 시작</button>
         <label class="fld"><span>친구가 알려 준 코드</span><input id="mpCode" value="${esc(M.codeIn)}" placeholder="예: v3-48213, h2008, rr-h2022-30"></label>
         <button class="btn primary" data-mp="usecode">이 코드로 시작</button>
-        <p class="mpmsg" aria-live="polite">${esc(M.msg)}</p></section>`;
+        <p class="mpmsg" aria-live="polite">${esc(M.msg)}</p></section>
+      <section class="tcard"><h2>🏫 교실 모드</h2><p class="small muted">선생님이 한 반 전체에 같은 시장을 내고, 학생 결과 QR을 모아 순위·토론 질문을 만들어요.</p><button class="btn" data-nav="teach">교실 모드 열기</button></section>`;
   }
 
   async function click(cmd, s) {
@@ -293,5 +294,5 @@ window.RAUM_MP = (() => {
     rerender();
   }
   document.addEventListener("change", (e) => { if (e.target.id === "mpChoice") M.choice = e.target.value; if (e.target.id === "mpName") M.name = e.target.value.trim(); });
-  return { view, click, controls, finalBoard, onNext, afterAction, _M: M };
+  return { view, click, controls, finalBoard, onNext, afterAction, qrImg, scanLib, _M: M };
 })();
