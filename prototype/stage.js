@@ -240,10 +240,11 @@ window.RAUM_STAGE = (() => {
     return d;
   }
   function newRun(S, spec) {
-    S.stg = { ...spec, day: 0, cash: START_CASH, pos: {}, trades: 0, fees: 0, vals: [START_CASH], sel: null, done: false };
+    S.stg = { ...spec, mp: null, code: null, day: 0, cash: START_CASH, pos: {}, trades: 0, fees: 0, vals: [START_CASH], sel: null, done: false };
     const d = data(S.stg);
     S.stg.sel = d.assets.find((a) => !a.index)?.sym;
     S.stg.day = d.start;
+    S.stg.code = codeOf(S.stg);
     sub = "play";
   }
   const price = (d, sym, i) => d.series[sym][i];
@@ -352,7 +353,7 @@ window.RAUM_STAGE = (() => {
       ${todayNews.length ? `<div class="snews">${todayNews.map((n) => `<article class="newscard ${n.k === i ? "fresh" : ""}"><span class="ntag">${n.k === i ? "오늘 · " : ""}${n.kind === "official" ? "공식 발표" : n.kind === "earnings" ? "실적 발표" : "뉴스"}</span><h3>${n.headline}</h3>${n.body ? `<p>${n.body}</p>` : ""}</article>`).join("")}</div>` : `<p class="small muted">최근 큰 뉴스는 없어요. 차트와 시장 흐름을 보세요.</p>`}
       <h3 class="sub">내 주머니</h3>
       <ul class="orders">${[`<li>현금 <b style="margin-left:auto">${won(run.cash)}</b></li>`, ...Object.entries(run.pos).map(([k, ps]) => `<li>${name(d, k)} ${fmt(ps.qty)}주 <b class="${cls(ps.qty * price(d, k, i) - ps.cost)}" style="margin-left:auto">${won(ps.qty * price(d, k, i))}</b></li>`)].join("")}</ul>
-      <div class="stime"><button class="btn ghost" data-stg="next:1">다음 날 ▶</button><button class="btn ghost" data-stg="next:5">5일 ▶</button><button class="btn ghost" data-stg="next:999">끝까지 ⏭</button></div>
+      ${run.mp && window.RAUM_MP ? window.RAUM_MP.controls(S) : `<div class="stime"><button class="btn ghost" data-stg="next:1">다음 날 ▶</button><button class="btn ghost" data-stg="next:5">5일 ▶</button><button class="btn ghost" data-stg="next:999">끝까지 ⏭</button></div>`}
     </div>`;
   }
   function yearQuiz(S) {
@@ -383,7 +384,8 @@ window.RAUM_STAGE = (() => {
       <ul class="orders">${rows.map(({ a, r }) => `<li><i class="dotc" style="background:${a.color}"></i>${a.name} <b class="${cls(r)}" style="margin-left:auto">${pct(r)}</b></li>`).join("")}</ul>
       <p class="note">${tip}</p>
       ${kidBox(S, run.real ? "진짜 있었던 일로 연습했어요. 같은 일이 똑같이 다시 일어나지는 않지만, 비슷한 상황에서 사람들이 어떻게 움직이는지 배울 수 있어요." : "이번 시장은 만든 이야기였어요. 그래도 '금리가 오르면 채권이 내려간다', '기름값이 오르면 항공사가 힘들다' 같은 원리는 실제와 같아요.")}
-      <div class="tnav"><button class="btn" data-stg="map">스테이지</button><button class="btn primary" data-stg="again">${run.random ? "🎲 한 판 더" : "다시 도전"}</button></div>
+      ${run.mp && window.RAUM_MP ? window.RAUM_MP.finalBoard(S) : `<div class="tnav"><button class="btn" data-stg="map">스테이지</button><button class="btn primary" data-stg="again">${run.random ? "🎲 한 판 더" : "다시 도전"}</button></div>`}
+      ${run.code && !run.mp ? `<p class="small muted">같은 판 코드 <b class="code">${run.code}</b> · 친구에게 결과 <b>${pct(R.r)} ${stars(R.stars)}</b>를 보여 주세요.</p>` : ""}
     </section>`;
   }
   function view(S) {
@@ -406,7 +408,7 @@ window.RAUM_STAGE = (() => {
       const pool = [...HS.stages.filter((x) => H[x.id]).map((x) => x.id), "daily", "daily"];
       const pick = pool[r.int(pool.length)];
       if (pick === "daily") {
-        const syms = ["AAPL", "AMZN", "NFLX", "ZM", "AAL", "CCL", "XOM"].sort(() => r.u() - 0.5).slice(0, 5).concat("SPY");
+        const syms = ["AAPL", "AMZN", "ZM", "AAL", "XOM", "SPY"]; // 코드(rd-시작)로 똑같이 다시 만들 수 있게 고정
         const a = PRE + r.int(D.dates.length - 61 - PRE);
         newRun(S, { id: "random-real", random: true, real: true, hidden: true, from: D.dates[a], to: D.dates[a + 59], syms, title: "비밀의 60일", icon: "🎲", year: Number(D.dates[a + 29].slice(0, 4)) });
       } else {
@@ -430,8 +432,48 @@ window.RAUM_STAGE = (() => {
     else if (a === "again") { const run = S.stg; if (run.random) random(S, run.real); else start(S, run.id); }
     else if (a === "sel") S.stg.sel = b;
     else if (a === "buy" || a === "sell") trade(S, a, Number(b));
-    else if (a === "next") advance(S, Number(b));
+    else if (a === "next") { if (S.stg?.mp && window.RAUM_MP) return window.RAUM_MP.onNext(S, Number(b)); advance(S, Number(b)); }
     else if (a === "guess") { S.stg.guess = Number(b); if (S.stg.guess === S.stg.year) S.stgYearHits = (S.stgYearHits || 0) + 1; }
   }
-  return { _data: data, view, click, go: (s) => (sub = s), random, counts: (S) => Object.values(S.stgStars || {}).reduce((t, x) => t + x, 0) };
+  // ---------- 멀티플레이 · 코드 대결 지원 ----------
+  const SPEC_KEYS = ["id", "kind", "seed", "hid", "fromIdx", "toIdx", "real", "hidden", "from", "to", "syms", "title", "icon", "revealText", "intro", "kidIntro", "year", "random"];
+  const specOf = (run) => Object.fromEntries(SPEC_KEYS.filter((k) => run[k] !== undefined).map((k) => [k, run[k]]));
+  function startSpec(S, spec, extra = {}) { newRun(S, spec); Object.assign(S.stg, extra); }
+  // 짧은 코드: 이름 붙은 스테이지는 id(가상은 -시드), 랜덤 실제는 rr-시대-시작, rd-시작, 랜덤 가상은 rv-종류-시드
+  function codeOf(run) {
+    if (run.random && run.hid) return `rr-${run.hid}-${run.fromIdx}`;
+    if (run.random && run.real) return `rd-${dIdx(run.from)}`;
+    if (run.random) return `rv-${run.kind}-${run.seed}`;
+    return run.kind ? `${run.id}-${run.seed}` : run.id;
+  }
+  function specFromCode(code) {
+    const c = String(code || "").trim().toLowerCase();
+    let m;
+    if ((m = c.match(/^(v\d)-(\d+)$/))) { const v = VIRTUAL.find((x) => x.id === m[1]); return v && { id: v.id, kind: v.kind, seed: Number(m[2]), title: v.title, icon: v.icon }; }
+    if ((m = c.match(/^rv-([a-z]+)-(\d+)$/)) && SCEN[m[1]]) return { id: "random-virtual", random: true, kind: m[1], seed: Number(m[2]), title: "알 수 없는 시장", icon: "🎲" };
+    if ((m = c.match(/^rr-([a-z0-9]+)-(\d+)$/)) && H[m[1]]) {
+      const src = H[m[1]], def = HS.stages.find((x) => x.id === m[1]), fromIdx = Number(m[2]), span = Math.min(60, src.dates.length - fromIdx);
+      if (span < 10) return null;
+      return { id: "random-real", random: true, real: true, hidden: true, hid: m[1], fromIdx, toIdx: fromIdx + span - 1, title: "비밀의 시대", icon: "🎲", revealText: def.reveal, year: Number(src.dates[fromIdx + Math.floor((span - 1) / 2)].slice(0, 4)) };
+    }
+    if ((m = c.match(/^rd-(\d+)$/))) {
+      const a = Number(m[1]);
+      if (a < PRE || a + 59 >= D.dates.length) return null;
+      return { id: "random-real", random: true, real: true, hidden: true, from: D.dates[a], to: D.dates[a + 59], syms: ["AAPL", "AMZN", "ZM", "AAL", "XOM", "SPY"], title: "비밀의 60일", icon: "🎲", year: Number(D.dates[a + 29].slice(0, 4)) };
+    }
+    const hs = HS.stages.find((x) => x.id === c);
+    if (hs && H[c]) return { id: c, hid: c, real: true, title: hs.title, icon: hs.icon, revealText: hs.reveal, intro: hs.intro, kidIntro: hs.kid, year: hs.year };
+    const re = REAL.find((x) => x.id === c);
+    if (re) return { id: c, real: true, from: re.from, to: re.to, syms: re.syms, title: re.title, icon: re.icon, revealText: re.reveal };
+    return null;
+  }
+  const playable = () => [...TIMELINE.map((x) => ({ id: x.id, label: `${x.year} ${x.icon} ${x.title}` })), ...VIRTUAL.map((x) => ({ id: x.id, label: `가상 ${x.icon} ${x.title}` }))];
+  function specForChoice(id) {
+    if (id === "random-real" || id === "random-virtual") { const T = {}; random(T, id === "random-real"); return specOf(T.stg); }
+    const T = {}; start(T, id); return specOf(T.stg);
+  }
+  function advanceTo(S, day) { const run = S.stg; if (run && day > run.day) advance(S, day - run.day); }
+  const snapshot = (S) => { const run = S.stg, d = data(run); return { day: run.day, end: d.end, value: value(run, d), r: value(run, d) / START_CASH - 1, trades: run.trades, done: run.done, stars: run.result?.stars ?? null }; };
+
+  return { _data: data, specOf, startSpec, codeOf, specFromCode, playable, specForChoice, advanceTo, snapshot, view, click, go: (s) => (sub = s), random, counts: (S) => Object.values(S.stgStars || {}).reduce((t, x) => t + x, 0) };
 })();
