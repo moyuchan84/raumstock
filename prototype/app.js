@@ -93,6 +93,9 @@
 
   // ---------- 차트 ----------
   function lineChart(values, { w = 440, h = 200, pins = [], startAt = null, pad = { l: 8, r: 58, t: 14, b: 26 } } = {}) {
+    const showStart = startAt != null && startAt <= values.length - 1;
+    // Reserve a strip above the plot for the "탐험 시작" label so it never meets the y-axis ticks.
+    if (showStart) pad = { ...pad, t: pad.t + 14 };
     const lo = Math.min(...values), hi = Math.max(...values);
     const span = hi - lo || hi * 0.1 || 1;
     const y0 = lo - span * 0.08, y1 = hi + span * 0.08;
@@ -105,8 +108,10 @@
     const grid = ticks
       .map((v) => `<line x1="${pad.l}" x2="${w - pad.r}" y1="${Y(v)}" y2="${Y(v)}" class="grid"/><text x="${w - pad.r + 8}" y="${Y(v) + 4}" class="tick">${short(v)}</text>`)
       .join("");
-    const start = startAt != null && startAt <= last
-      ? `<line x1="${X(startAt)}" x2="${X(startAt)}" y1="${pad.t}" y2="${h - pad.b}" class="startline"/><text x="${X(startAt) + 4}" y="${pad.t + 10}" class="tick">탐험 시작</text>`
+    // Label sits above the plot; it hangs left of the line when the line is in the right half.
+    const startRight = showStart && X(startAt) > (pad.l + w - pad.r) / 2;
+    const start = showStart
+      ? `<line x1="${X(startAt)}" x2="${X(startAt)}" y1="${pad.t - 12}" y2="${h - pad.b}" class="startline"/><text x="${X(startAt) + (startRight ? -4 : 4)}" y="${pad.t - 4}" class="tick"${startRight ? ' text-anchor="end"' : ""}>탐험 시작</text>`
       : "";
     const pinSvg = pins
       .filter((p) => p.i <= last)
