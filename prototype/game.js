@@ -28,7 +28,7 @@
   const fresh = () => ({
     di: START_DI, seed: 0, cash: 0, pos: {}, orders: [], hist: [], divPending: [], fees: 0, realized: 0, divRecv: 0,
     ch: 0, step: 0, done: {}, preds: {}, quiz: {}, marks: {}, peakSince: {},
-    view: "home", sym: "AAPL", tab: "chart", range: "3M", ctype: "line", oid: 1, inbox: [], ran: {}, freeMode: false,
+    view: "home", sym: "AAPL", tab: "chart", range: "3M", ctype: "line", oid: 1, inbox: [], ran: {}, freeMode: false, kid: true,
   });
   let S = load() || fresh();
   function load() { try { const r = localStorage.getItem(KEY); return r ? { ...fresh(), ...JSON.parse(r) } : null; } catch { return null; } }
@@ -60,6 +60,11 @@
   const shortDate = (d) => `${Number(d.slice(5, 7))}.${Number(d.slice(8))}`;
   const diOf = (d) => { let i = D.dates.findIndex((x) => x >= d); return i < 0 ? LAST_DI : i; };
   const esc = (s) => String(s).replace(/[&<>"]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" })[c]);
+
+  // 🧒 쉽게 말하면 (어린이 설명). S.kid가 켜져 있을 때만 보여요.
+  const kidTip = (t) => (S.kid ? `<small class="kid">🧒 ${t}</small>` : "");
+  const kidBox = (t) => (S.kid && t ? `<div class="kidbox"><b>🧒 쉽게 말하면</b><p>${t}</p></div>` : "");
+  const kidToggle = () => `<button class="kidtoggle ${S.kid ? "on" : ""}" data-act="kid" aria-pressed="${S.kid}">🧒 쉽게 보기 ${S.kid ? "켬" : "끔"}</button>`;
 
   // ---------- 주문 · 체결 ----------
   function fill(o, price) {
@@ -220,7 +225,7 @@
   function render() {
     renderTop();
     updateCity();
-    const v = { home: viewHome, watch: viewWatch, stock: viewStock, account: viewAccount, learn: viewLearn }[S.view] || viewHome;
+    const v = { home: viewHome, watch: viewWatch, stock: viewStock, account: viewAccount, learn: viewLearn, train: () => window.RAUM_TRAIN.view(S) }[S.view] || viewHome;
     $("#view").innerHTML = v();
     document.querySelectorAll("[data-nav]").forEach((b) => b.classList.toggle("on", b.dataset.nav === S.view || (S.view === "stock" && b.dataset.nav === "watch")));
     renderCoach();
@@ -252,7 +257,7 @@
         <h1>실제 2020년 시장으로<br>투자의 흐름을 배워요</h1>
         <p class="muted">계좌 개설부터 실적 발표, 폭락, 배당, 세금까지. 하루씩 시간을 보내며 직접 사고팔아 보세요.</p>
         <div class="hero-bar"><i style="width:${(progress / ST.chapters.length) * 100}%"></i></div>
-        <p class="small">${progress}/${ST.chapters.length} 챕터 완료</p>
+        <p class="small">${progress}/${ST.chapters.length} 챕터 완료 · ${kidToggle()}</p>
         ${cur ? `<button class="btn primary" data-act="continue">${S.step || S.ch ? "이어하기" : "시작하기"} · ${cur.no}장 ${cur.title}</button>` : `<button class="btn primary" data-act="free-time">12월 31일까지 이어 가기</button>`}
       </section>
       <h2 class="sec">챕터</h2>
@@ -261,6 +266,7 @@
           const s = chapterState(i);
           return `<li class="chap ${s}"><span class="tw"><img class="thumb" src="img/cover-${c.id}.webp" alt="" loading="lazy"><span class="no">${s === "done" ? "✓" : c.no}</span></span><div><b>${c.title}</b><small>${c.sub}</small><small class="muted">${c.period}</small></div><span class="tag">${s === "done" ? "완료" : s === "now" ? "진행 중" : "잠김"}</span></li>`;
         }).join("")}
+        <li class="chap train"><span class="tw"><span class="thumb tthumb">🎯</span></span><div><b>실전 훈련 · 진실과 오해, 차트, 선택의 순간</b><small>제로섬? PER? 뉴스? 눌림목·지지·저항 · 손절 · 분할 매수·매도 · 목표 수익</small><small class="muted">${window.RAUM_TRAIN.counts(S).done}/${window.RAUM_TRAIN.counts(S).total} 완료 · 언제든 가능</small></div><button class="tag link" data-nav="train">열기 ›</button></li>
         <li class="chap free"><span class="tw"><img class="thumb" src="img/cover-c8.webp" alt="" loading="lazy"><span class="no">8</span></span><div><b>나만의 포트폴리오 · 2020년 자유 투자</b><small>ETF · 채권 · 금 · 원유 · 자산배분 · 시장의 4계절 · 신용</small><small class="muted">주 단위로 1년 전체 · 언제든 플레이 가능</small></div><a class="tag link" href="free.html">열기 ›</a></li>
       </ol>
       <p class="foot">가격은 실제 일별 수정 종가(분할·배당 반영), 재무 숫자는 SEC 10-K 공시, 환율은 1달러 = 1,200원 고정이에요. 투자 권유가 아닌 교육용 시뮬레이션이에요. <button class="linkbtn" data-act="reset">처음부터 다시</button></p>`;
@@ -359,14 +365,14 @@
     const max = Math.max(...asks.map((x) => x.q), ...bids.map((x) => x.q));
     const row = (x, side) => `<li class="${side}"><span class="bq">${side === "ask" ? `<i style="width:${(x.q / max) * 100}%"></i>${fmt(x.q)}` : ""}</span><b>${usd(x.p)}</b><span class="bq">${side === "bid" ? `<i style="width:${(x.q / max) * 100}%"></i>${fmt(x.q)}` : ""}</span></li>`;
     return `<ul class="book">${asks.map((x) => row(x, "ask")).join("")}<li class="mid"><span>현재가</span><b>${usd(p)}</b><span class="${cls(dayChg(s))}">${pct(dayChg(s))}</span></li>${bids.map((x) => row(x, "bid")).join("")}</ul>
-      <p class="small muted">위: 매도호가 · 아래: 매수호가 · 스프레드 ${usd(tick * 2)}<br>연습용 가상 호가예요. 실제 그날의 호가·잔량이 아니에요.</p>`;
+      ${S.kid ? `<p class="kidline">🧒 위 파란 줄은 '이 값이면 팔게요', 아래 빨간 줄은 '이 값이면 살게요' 하는 사람들이에요. 옆의 숫자는 그 값에 줄 선 주식 수예요.</p>` : ""}<p class="small muted">위: 매도호가 · 아래: 매수호가 · 스프레드 ${usd(tick * 2)}<br>연습용 가상 호가예요. 실제 그날의 호가·잔량이 아니에요.</p>`;
   }
   function stockInfo(s) {
     const f = FIN[s], p = px(s);
     const rows = [["현재가", `${usd(p)} (≈ ${won(p * FX)})`]];
     if (f) {
       const mcap = p * f.sharesM * 1e6;
-      rows.push(["시가총액", `${usd(mcap / 1e9).replace("$", "$")}B ≈ ${wonShort(mcap * FX)}원`], ["EPS (작년, 희석)", usd(f.eps)], ["PER", f.eps > 0 ? `${(p / f.eps).toFixed(1)}배` : "적자"], ["주식 수 (희석 가중평균)", `${fmt(f.sharesM)}백만 주`]);
+      rows.push(["시가총액" + kidTip("회사를 통째로 사려면 드는 돈"), `${usd(mcap / 1e9)}B ≈ ${wonShort(mcap * FX)}원`], ["EPS (작년, 희석)" + kidTip("주식 한 조각이 1년 동안 번 돈"), usd(f.eps)], ["PER" + kidTip("산 값을 다 버는 데 걸리는 햇수"), f.eps > 0 ? `${(p / f.eps).toFixed(1)}배` : "적자"], ["주식 수 (희석 가중평균)" + kidTip("회사를 나눈 조각의 수"), `${fmt(f.sharesM)}백만 주`]);
     }
     rows.push(["업종", CO[s].sector], ["거래 시간", "한국 시간 23:30~06:00 (서머타임 22:30~05:00)"], ["가격 제한폭", "없음 (시장 전체 급락 시 서킷브레이커)"]);
     return `<p class="desc">${CO[s].desc}</p><dl class="kv list">${rows.map(([k, v]) => `<div><dt>${k}</dt><dd>${v}</dd></div>`).join("")}</dl>
@@ -376,11 +382,13 @@
     const f = FIN[s], p = f.prev, B = (v) => v * 1e9 * FX;
     const growth = p.rev / p.revBefore - 1, opm = p.op != null ? p.op / p.rev : null, npm = p.net / p.rev;
     const eq = p.assets - p.liab, debt = eq > 0 ? p.liab / eq : null;
-    const bars = [["매출", p.rev], ["영업이익", p.op], ["순이익", p.net]].filter(([, v]) => v != null);
+    const bars = [["매출", p.rev, "판 돈 전부"], ["영업이익", p.op, "재료비·월급 빼고 남은 돈"], ["순이익", p.net, "세금까지 빼고 진짜 남은 돈"]].filter(([, v]) => v != null);
     return `<h3 class="sub">손익계산서 <small>작년 · ${f.fy}</small></h3>
-      <ul class="fbars">${bars.map(([k, v]) => `<li><span>${k}</span><span class="fb"><i style="width:${Math.max(1.5, (v / p.rev) * 100)}%"></i></span><b>$${fmt(v, v < 10 ? 2 : 1)}B</b><small>${wonShort(B(v))}원</small></li>`).join("")}</ul>
+      <ul class="fbars">${bars.map(([k, v, kt]) => `<li><span>${k}</span><span class="fb"><i style="width:${Math.max(1.5, (v / p.rev) * 100)}%"></i></span><b>$${fmt(v, v < 10 ? 2 : 1)}B</b><small>${wonShort(B(v))}원</small>${kidTip(kt)}</li>`).join("")}</ul>
+      ${S.kid ? `<p class="kidline">🧒 레모네이드 가게로 치면: 1년 동안 레모네이드를 팔아 들어온 돈이 매출, 레몬·컵·알바비를 빼고 남은 돈이 영업이익, 세금까지 내고 남은 돈이 순이익이에요.</p>` : ""}
       <dl class="kv"><div><dt>매출 성장</dt><dd class="${cls(growth)}">${pct(growth, 1)}</dd></div><div><dt>${opm != null ? "영업이익률" : "순이익률"}</dt><dd>${((opm ?? npm) * 100).toFixed(1)}%</dd></div><div><dt>부채비율</dt><dd class="${debt == null || debt > 2 ? "down" : ""}">${debt == null ? "자본잠식" : (debt * 100).toFixed(0) + "%"}</dd></div></dl>
-      <h3 class="sub">재무상태표</h3>
+      ${S.kid ? `<p class="kidline">🧒 매출 성장: 작년보다 얼마나 더 팔았나 · 이익률: 1,000원 팔면 몇 원 남기나 · 부채비율: 빌린 돈이 내 돈의 몇 배인가 (자본잠식 = 빌린 돈이 가진 것보다 많아요)</p>` : ""}
+      <h3 class="sub">재무상태표</h3>${S.kid ? `<p class="kidline">🧒 자산은 가게가 가진 모든 것, 부채는 갚아야 할 빚, 자본은 빚을 다 갚고 남는 진짜 내 몫이에요.</p>` : ""}
       <dl class="kv list"><div><dt>자산</dt><dd>$${fmt(p.assets, 1)}B</dd></div><div><dt>부채</dt><dd>$${fmt(p.liab, 1)}B</dd></div><div><dt>자본</dt><dd class="${eq < 0 ? "down" : ""}">$${fmt(eq, 2)}B</dd></div></dl>
       <p class="note">${f.note}</p>
       <p class="small muted">출처: SEC EDGAR 10-K (접수번호 ${f.src}).</p>`;
@@ -395,11 +403,11 @@
       <section class="acct">
         <p class="muted">총자산</p><b class="big">${won(t)}</b><span class="${cls(t - S.seed)}">${pct(t / S.seed - 1)} (${won(t - S.seed)})</span>
         <dl class="kv list">
-          <div><dt>예수금</dt><dd>${won(S.cash)}</dd></div>
-          <div><dt>주문가능금액</dt><dd>${won(availCash())}</dd></div>
-          <div><dt>평가금액</dt><dd>${won(hv)}</dd></div>
-          <div><dt>평가손익</dt><dd class="${cls(hv - cost)}">${won(hv - cost)}</dd></div>
-          <div><dt>실현손익</dt><dd class="${cls(S.realized)}">${won(S.realized)}</dd></div>
+          <div><dt>예수금${kidTip("지갑 속 현금")}</dt><dd>${won(S.cash)}</dd></div>
+          <div><dt>주문가능금액${kidTip("예약에 찜하지 않은, 지금 쓸 수 있는 돈")}</dt><dd>${won(availCash())}</dd></div>
+          <div><dt>평가금액${kidTip("가진 주식을 오늘 값으로 계산한 돈")}</dt><dd>${won(hv)}</dd></div>
+          <div><dt>평가손익${kidTip("지금 팔면 벌거나 잃는 돈 (아직 확정 아님)")}</dt><dd class="${cls(hv - cost)}">${won(hv - cost)}</dd></div>
+          <div><dt>실현손익${kidTip("팔아서 진짜로 벌거나 잃은 돈")}</dt><dd class="${cls(S.realized)}">${won(S.realized)}</dd></div>
           <div><dt>받은 배당 (세후)</dt><dd>${won(S.divRecv)}</dd></div>
           <div><dt>낸 수수료</dt><dd>${won(S.fees)}</dd></div>
         </dl>
@@ -419,7 +427,8 @@
 
   function viewLearn() {
     return `<h2 class="sec">용어 사전</h2>
-      <dl class="gloss">${ST.glossary.map(([k, v]) => `<div><dt>${k}</dt><dd>${v}</dd></div>`).join("")}</dl>
+      <p>${kidToggle()}</p>
+      <dl class="gloss">${ST.glossary.map(([k, v, kid]) => `<div><dt>${k}</dt><dd>${v}</dd>${kid && S.kid ? `<dd class="kid">🧒 ${kid}</dd>` : ""}</div>`).join("")}</dl>
       <p class="small muted">더 깊은 수업(금리와 채권, 자산배분, 시장의 4계절, 신용과 반대매매)은 8장 자유 투자 모드의 '배우기'에 있어요.</p>`;
   }
 
@@ -430,7 +439,7 @@
     const s = step(), box = $("#coach");
     if (!s) { box.className = "coach hide"; box.innerHTML = ""; renderTimebar(s); return; }
     const ch = chapter();
-    const head = `<div class="c-head">${COACH_AV}<span>${ch.no}장 · ${ch.title}</span><small>${S.step + 1}/${ch.steps.length}</small></div>`;
+    const head = `<div class="c-head">${COACH_AV}<span>${ch.no}장 · ${ch.title}</span>${kidToggle()}<small>${S.step + 1}/${ch.steps.length}</small></div>`;
     renderTimebar(s);
     if (s.task || s.free) {
       box.className = "coach mini";
@@ -440,7 +449,7 @@
     box.className = "coach full";
     let body = "", actions = `<button class="btn primary" data-act="next">다음</button>`;
     const cover = `<img class="cover" src="img/cover-${ch.id}.webp" alt="">`;
-    if (s.say) body = `${S.step === 0 ? cover : ""}${s.title ? `<h3>${s.title}</h3>` : ""}<p>${txt(s.say)}</p>`;
+    if (s.say) body = `${S.step === 0 ? cover : ""}${s.title ? `<h3>${s.title}</h3>` : ""}<p>${txt(s.say)}</p>${kidBox(s.kid)}`;
     if (s.setup) {
       body = `<h3>씨앗돈을 입금하세요</h3><p class="muted">얼마로 시작하느냐에 따라 경험이 달라져요.</p>
         <div class="seeds">${[[1_000_000, "100만 원", "비싼 주식은 몇 주밖에 못 사요. 나눠 담기가 어려워요."], [10_000_000, "1,000만 원", "여러 종목을 사 보기 좋은 기본값"], [100_000_000, "1억 원", "금액이 커도 잃는 비율은 똑같아요"]].map(([v, n, d]) => `<button class="seed" data-seed="${v}"><b>${n}</b><small>${d}</small></button>`).join("")}</div>`;
@@ -448,7 +457,7 @@
     }
     if (s.quiz) {
       const a = S.quiz[`${ch.id}-${S.step}`];
-      body = `<h3>퀴즈</h3><p>${s.quiz.q}</p><div class="opts">${s.quiz.opts.map((o, i) => `<button class="opt ${a == null ? "" : i === s.quiz.a ? "right" : i === a ? "wrong" : ""}" data-quiz="${i}" ${a != null ? "disabled" : ""}>${o}</button>`).join("")}</div>${a != null ? `<p class="why ${a === s.quiz.a ? "ok" : "no"}">${a === s.quiz.a ? "정답!" : "아쉬워요."} ${s.quiz.why}</p>` : ""}`;
+      body = `<h3>퀴즈</h3><p>${s.quiz.q}</p><div class="opts">${s.quiz.opts.map((o, i) => `<button class="opt ${a == null ? "" : i === s.quiz.a ? "right" : i === a ? "wrong" : ""}" data-quiz="${i}" ${a != null ? "disabled" : ""}>${o}</button>`).join("")}</div>${a != null ? `<p class="why ${a === s.quiz.a ? "ok" : "no"}">${a === s.quiz.a ? "정답!" : "아쉬워요."} ${s.quiz.why}</p>${kidBox(s.quiz.kidWhy)}` : ""}`;
       actions = a != null ? actions : "";
     }
     if (s.predict) {
@@ -499,9 +508,10 @@
       <div class="sh-head"><h3>${CO[s].ko} <small>${s}</small></h3><button class="x" data-act="close" aria-label="닫기">✕</button></div>
       <div class="seg side"><button data-oside="buy" class="${isBuy ? "on buy" : ""}">매수</button><button data-oside="sell" class="${!isBuy ? "on sell" : ""}">매도</button></div>
       <div class="seg sm"><button data-otype="limit" class="${o.type === "limit" ? "on" : ""}">지정가</button><button data-otype="market" class="${o.type === "market" ? "on" : ""}">시장가</button></div>
+      ${S.kid ? `<p class="kidline">🧒 ${o.type === "market" ? "시장가: '얼마든 지금 바로 주세요!' 바로 거래돼요." : "지정가: '이 가격이 되면 할게요' 하는 예약이에요. 값이 안 오면 기다려요."}</p>` : ""}
       <label class="fld"><span>가격 (USD)</span>${o.type === "market" ? `<output>${usd(price)} <small class="muted">지금 ${isBuy ? "최저 매도호가" : "최고 매수호가"}</small></output>` : `<div class="stepper"><button data-pstep="-1">−</button><input id="oPrice" inputmode="decimal" value="${o.price.toFixed(2)}"><button data-pstep="1">＋</button></div><div class="chips">${[-5, -2, 0, 2].map((p) => `<button class="chip" data-ppct="${p}">${p === 0 ? "현재가" : (p > 0 ? "+" : "") + p + "%"}</button>`).join("")}</div>`}</label>
       <label class="fld"><span>수량 (주)</span><div class="stepper"><button data-qstep="-1">−</button><input id="oQty" inputmode="numeric" value="${o.qty}"><button data-qstep="1">＋</button></div><div class="chips">${[10, 25, 50, 100].map((p) => `<button class="chip" data-qpct="${p}">${p === 100 ? "최대" : p + "%"}</button>`).join("")}</div></label>
-      <dl class="kv list"><div><dt>주문 금액</dt><dd>${usd(o.qty * price)} ≈ ${won(amt)}</dd></div><div><dt>수수료 (0.25%)</dt><dd>${won(fee)}</dd></div><div><dt>${isBuy ? "주문가능금액" : "매도 가능 수량"}</dt><dd>${isBuy ? won(availCash()) : availQty(s) + "주"} · 최대 ${Math.max(0, maxQ)}주</dd></div></dl>
+      <dl class="kv list"><div><dt>주문 금액</dt><dd>${usd(o.qty * price)} ≈ ${won(amt)}</dd></div><div><dt>수수료 (0.25%)${kidTip("증권회사에 내는 심부름 값")}</dt><dd>${won(fee)}</dd></div><div><dt>${isBuy ? "주문가능금액" : "매도 가능 수량"}</dt><dd>${isBuy ? won(availCash()) : availQty(s) + "주"} · 최대 ${Math.max(0, maxQ)}주</dd></div></dl>
       <p id="oMsg" class="omsg" aria-live="polite"></p>
       <button class="btn wide ${isBuy ? "buy" : "sell"}" data-act="submit">${o.type === "market" ? "시장가" : "지정가"} ${isBuy ? "매수" : "매도"} ${o.qty}주</button></div>`;
   }
@@ -528,6 +538,7 @@
     if (!b) return;
     const d = b.dataset;
     if (d.nav) return go(d.nav);
+    if (d.train) { window.RAUM_TRAIN.click(d.train, S); render(); return window.scrollTo(0, 0); }
     if (d.sym) return go("stock", { sym: d.sym, tab: S.tab === "fin" && !FIN[d.sym] ? "chart" : S.tab });
     if (d.tab) { S.tab = d.tab; render(); return emit({ type: "tab" }); }
     if (d.range) { S.range = d.range; return render(); }
@@ -588,6 +599,7 @@
     }
     if (act === "day") return advance(1, step()?.free);
     if (act === "week") return advance(5, step()?.free);
+    if (act === "kid") { S.kid = !S.kid; if ($("#sheet").classList.contains("open") && ord) renderOrder(); return render(); }
     if (act === "free-time") { S.freeMode = true; return go("watch"); }
     if (act === "reset") {
       if (!b.dataset.armed) { b.dataset.armed = "1"; b.textContent = "한 번 더 누르면 모든 기록이 지워져요"; return; }

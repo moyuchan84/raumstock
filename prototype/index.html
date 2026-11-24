@@ -173,7 +173,7 @@ b, .tnum, dd, output, input { font-variant-numeric: tabular-nums; }
 #timebar[hidden] { display: none; }
 
 /* tab bar */
-.tabbar { position: fixed; bottom: 0; left: 50%; transform: translateX(-50%); width: min(460px, 100%); height: calc(var(--tab-h) + env(safe-area-inset-bottom)); padding-bottom: env(safe-area-inset-bottom); display: grid; grid-template-columns: repeat(4, 1fr); background: #0d1325; border-top: 1px solid var(--line); z-index: 40; }
+.tabbar { position: fixed; bottom: 0; left: 50%; transform: translateX(-50%); width: min(460px, 100%); height: calc(var(--tab-h) + env(safe-area-inset-bottom)); padding-bottom: env(safe-area-inset-bottom); display: grid; grid-template-columns: repeat(5, 1fr); background: #0d1325; border-top: 1px solid var(--line); z-index: 40; }
 .tabbar button { display: grid; place-items: center; align-content: center; gap: 2px; font-size: .72rem; color: var(--muted); font-weight: 600; }
 .tabbar svg { width: 22px; height: 22px; stroke: currentColor; fill: none; stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round; }
 .tabbar button.on { color: var(--text); }
@@ -196,6 +196,51 @@ b, .tnum, dd, output, input { font-variant-numeric: tabular-nums; }
 #toast { position: fixed; top: calc(70px + env(safe-area-inset-top)); left: 50%; transform: translate(-50%, -20px); width: min(420px, calc(100% - 24px)); background: #24345e; border-radius: 12px; padding: 12px 14px; font-size: .9rem; opacity: 0; pointer-events: none; transition: .25s; z-index: 70; box-shadow: 0 10px 30px rgb(0 0 0 / .4); }
 #toast.on { opacity: 1; transform: translate(-50%, 0); }
 
+/* 🧒 쉽게 보기 */
+.kid { display: block; color: #ffd98a; font-size: .74rem; font-weight: 500; margin-top: 2px; line-height: 1.4; }
+dd.kid { color: #ffd98a; font-size: .85rem; }
+.kidbox { background: color-mix(in srgb, var(--accent) 12%, var(--surface)); border: 1px solid color-mix(in srgb, var(--accent) 40%, transparent); border-radius: 12px; padding: 10px 12px; display: grid; gap: 4px; }
+.kidbox b { color: var(--accent); font-size: .8rem; } .kidbox p { font-size: .95rem; line-height: 1.6; }
+.kidline { background: color-mix(in srgb, var(--accent) 10%, var(--surface)); border-radius: 10px; padding: 8px 10px; font-size: .85rem; color: #ffe3a3; line-height: 1.55; }
+.kidtoggle { font-size: .72rem; font-weight: 700; padding: 3px 9px; border-radius: 99px; background: var(--surface-2); color: var(--muted); white-space: nowrap; }
+.kidtoggle.on { background: color-mix(in srgb, var(--accent) 22%, transparent); color: var(--accent); }
+.c-head .kidtoggle { margin-left: auto; } .c-head .kidtoggle + small { margin-left: 8px; }
+.kv.list dt { display: grid; }
+.fbars small.kid { grid-column: 1 / -1; text-align: left; font-size: .74rem; color: #ffd98a; margin-top: -4px; }
+
+/* 실전 훈련 */
+.thero h1 { font-size: 1.5rem; }
+.tlist { list-style: none; margin: 0; padding: 0; display: grid; gap: 6px; }
+.tlist button { width: 100%; display: grid; grid-template-columns: auto minmax(0, 1fr) auto; gap: 2px 10px; align-items: center; text-align: left; padding: 12px; background: var(--surface); border: 1px solid var(--line); border-radius: 12px; }
+.tlist small { grid-column: 2; color: var(--muted); font-size: .75rem; }
+.tq { font-size: .68rem; font-weight: 800; padding: 3px 7px; border-radius: 6px; background: color-mix(in srgb, var(--up) 18%, transparent); color: var(--up); grid-row: span 2; }
+.tq.ch { background: color-mix(in srgb, var(--mint) 18%, transparent); color: var(--mint); }
+.t-news, .t-per { background: color-mix(in srgb, var(--accent) 18%, transparent); color: var(--accent); }
+.t-cut { background: color-mix(in srgb, var(--down) 20%, transparent); color: var(--down); }
+.t-goal, .t-long { background: color-mix(in srgb, var(--up) 18%, transparent); color: var(--up); }
+.t-pull, .t-split { background: color-mix(in srgb, var(--mint) 18%, transparent); color: var(--mint); }
+.tdone { color: var(--mint); font-weight: 800; grid-row: span 2; }
+.tcard { background: var(--surface); border: 1px solid var(--line); border-radius: 18px; padding: 16px; display: grid; gap: 12px; }
+.tcard h2 { font-size: 1.15rem; } .tcard h2 s { text-decoration-color: var(--up); text-decoration-thickness: 2px; }
+.tcard ul, .tcard ol { margin: 0; padding-left: 1.2em; display: grid; gap: 4px; }
+.tcard p { line-height: 1.65; }
+.tback { color: var(--muted); font-weight: 600; justify-self: start; }
+.tchart { width: 100%; height: auto; display: block; background: var(--app); border-radius: 12px; }
+.tchart .g { stroke: var(--line); } .tchart .tk { fill: var(--muted); font-size: 10px; font-family: var(--f); }
+.legend { display: flex; gap: 12px; font-size: .75rem; color: var(--muted); margin-top: -4px; } .legend i { display: inline-block; width: 14px; height: 3px; border-radius: 2px; margin-right: 5px; vertical-align: 3px; }
+.ttable { width: 100%; border-collapse: collapse; font-size: .82rem; }
+.ttable th { text-align: left; font-size: .72rem; color: var(--muted); font-weight: 600; padding: 6px 4px; border-bottom: 1px solid var(--line); }
+.ttable td { padding: 8px 4px; border-bottom: 1px solid var(--line); vertical-align: top; font-variant-numeric: tabular-nums; }
+.ttable td small { display: block; color: var(--muted); font-size: .7rem; }
+.ttable tr.mine td { background: color-mix(in srgb, var(--accent) 10%, transparent); }
+.ttable tr.mine td:first-child { font-weight: 700; }
+.tres { overflow-x: auto; }
+.lesson { display: grid; gap: 8px; border-left: 3px solid var(--accent); padding-left: 12px; }
+.tnav { display: grid; grid-template-columns: 1fr 1.6fr; gap: 8px; }
+.rules ol { gap: 8px; }
+.tthumb { display: grid; place-items: center; font-size: 1.6rem; background: linear-gradient(135deg, #24345e, #121a2e); }
+.chap.train { border-color: color-mix(in srgb, var(--mint) 50%, var(--line)); }
+
 .pulse { position: relative; animation: pulse 1.6s ease-in-out infinite; border-radius: 12px; }
 @keyframes pulse { 0%, 100% { box-shadow: 0 0 0 0 rgb(255 200 61 / 0); } 50% { box-shadow: 0 0 0 4px rgb(255 200 61 / .55); } }
 @media (prefers-reduced-motion: reduce) { *, *::before { animation: none !important; transition: none !important; } }
@@ -210,6 +255,7 @@ b, .tnum, dd, output, input { font-variant-numeric: tabular-nums; }
 <nav class="tabbar" aria-label="메뉴">
   <button data-nav="home"><svg viewBox="0 0 24 24"><path d="M3 11l9-7 9 7v9a1 1 0 0 1-1 1h-5v-6h-6v6H4a1 1 0 0 1-1-1z"/></svg>홈</button>
   <button data-nav="watch"><svg viewBox="0 0 24 24"><path d="M4 19V9m6 10V5m6 14v-7m4 7H2"/></svg>관심종목</button>
+  <button data-nav="train"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="8"/><circle cx="12" cy="12" r="4"/><path d="M12 2v3M12 19v3M2 12h3M19 12h3"/></svg>훈련</button>
   <button data-nav="account"><svg viewBox="0 0 24 24"><rect x="3" y="6" width="18" height="14" rx="2"/><path d="M3 10h18M7 15h4"/></svg>내 계좌</button>
   <button data-nav="learn"><svg viewBox="0 0 24 24"><path d="M4 5a2 2 0 0 1 2-2h13v16H6a2 2 0 0 0-2 2zM4 5v16M8 7h7"/></svg>용어</button>
 </nav>
@@ -221,6 +267,7 @@ b, .tnum, dd, output, input { font-variant-numeric: tabular-nums; }
 <script src="fin.js"></script>
 <script src="scenario-2020.js"></script>
 <script src="story.js"></script>
+<script src="train.js"></script>
 <script src="game.js"></script>
 <script type="module">
   // 홈 화면 3D 마켓 시티: 빌딩 높이 = 그날 시가총액 (game.js가 날짜가 바뀔 때마다 setCaps 호출)
