@@ -1,0 +1,19 @@
+<!doctype html>
+<meta charset="utf-8">
+<title>Raumstock cover studio</title>
+<!-- 챕터 표지를 렌더링하는 개발용 페이지. scripts/render-covers.mjs가 헤드리스 Edge로 열어 prototype/img/에 저장합니다. -->
+<script type="importmap">{"imports":{"three":"https://cdn.jsdelivr.net/npm/three@0.170.0/build/three.module.js","three/addons/":"https://cdn.jsdelivr.net/npm/three@0.170.0/examples/jsm/"}}</script>
+<body style="margin:0;background:#0b1020;color:#fff;font:14px sans-serif">
+<div id="out"></div>
+<script type="module">
+  import { renderCover, COVERS } from "../prototype/art3d.js";
+  window.__covers = {};
+  const only = new URLSearchParams(location.search).get("only");
+  for (const id of Object.keys(COVERS)) {
+    if (only && id !== only) continue;
+    const canvas = document.createElement("canvas");
+    window.__covers[id] = renderCover(id, canvas);
+    const img = new Image(); img.src = window.__covers[id]; img.width = 400; document.getElementById("out").append(img);
+  }
+  window.__done = true;
+</script>

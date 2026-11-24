@@ -10,3 +10,4 @@
   - `free.html` — 8장 자유 투자: 주 단위 1년, ETF·채권·금·원유, 자산배분, 시장의 4계절, 신용
 - 배포: https://raumstock.vercel.app (Vercel poc 팀 `raumstock` 프로젝트, 이 브랜치에 푸시하면 자동 배포)
 - 데이터: `data/raw/` (출처는 [data/SOURCES.md](data/SOURCES.md)). `node scripts/build-data.mjs` → `prototype/data.js`(주간), `node scripts/build-daily.mjs` → `prototype/daily.js`(일별)
+- 3D 일러스트: `prototype/art3d.js`(three.js). 챕터 표지는 `node scripts/render-covers.mjs`로 다시 렌더링 → `prototype/img/cover-*.webp` (Microsoft Edge 필요). 홈의 마켓 시티는 실시간 3D

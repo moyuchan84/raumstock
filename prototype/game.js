@@ -209,8 +209,17 @@
 
   // ---------- 화면 ----------
   const $ = (s) => document.querySelector(s);
+  const caps = () => Object.fromEntries(Object.entries(FIN).map(([s, f]) => [s, (px(s) * f.sharesM) / 1e3]));
+  window.RAUM_GAME = { caps };
+  function updateCity() {
+    const el = $("#city");
+    el.hidden = S.view !== "home";
+    window.RAUM_CITY?.setCaps(caps());
+  }
+  window.addEventListener("raum-city", updateCity);
   function render() {
     renderTop();
+    updateCity();
     const v = { home: viewHome, watch: viewWatch, stock: viewStock, account: viewAccount, learn: viewLearn }[S.view] || viewHome;
     $("#view").innerHTML = v();
     document.querySelectorAll("[data-nav]").forEach((b) => b.classList.toggle("on", b.dataset.nav === S.view || (S.view === "stock" && b.dataset.nav === "watch")));
@@ -250,9 +259,9 @@
       <ol class="chapters">
         ${ST.chapters.map((c, i) => {
           const s = chapterState(i);
-          return `<li class="chap ${s}"><span class="no">${s === "done" ? "✓" : c.no}</span><div><b>${c.title}</b><small>${c.sub}</small><small class="muted">${c.period}</small></div><span class="tag">${s === "done" ? "완료" : s === "now" ? "진행 중" : "잠김"}</span></li>`;
+          return `<li class="chap ${s}"><span class="tw"><img class="thumb" src="img/cover-${c.id}.webp" alt="" loading="lazy"><span class="no">${s === "done" ? "✓" : c.no}</span></span><div><b>${c.title}</b><small>${c.sub}</small><small class="muted">${c.period}</small></div><span class="tag">${s === "done" ? "완료" : s === "now" ? "진행 중" : "잠김"}</span></li>`;
         }).join("")}
-        <li class="chap free"><span class="no">8</span><div><b>나만의 포트폴리오 · 2020년 자유 투자</b><small>ETF · 채권 · 금 · 원유 · 자산배분 · 시장의 4계절 · 신용</small><small class="muted">주 단위로 1년 전체 · 언제든 플레이 가능</small></div><a class="tag link" href="free.html">열기 ›</a></li>
+        <li class="chap free"><span class="tw"><img class="thumb" src="img/cover-c8.webp" alt="" loading="lazy"><span class="no">8</span></span><div><b>나만의 포트폴리오 · 2020년 자유 투자</b><small>ETF · 채권 · 금 · 원유 · 자산배분 · 시장의 4계절 · 신용</small><small class="muted">주 단위로 1년 전체 · 언제든 플레이 가능</small></div><a class="tag link" href="free.html">열기 ›</a></li>
       </ol>
       <p class="foot">가격은 실제 일별 수정 종가(분할·배당 반영), 재무 숫자는 SEC 10-K 공시, 환율은 1달러 = 1,200원 고정이에요. 투자 권유가 아닌 교육용 시뮬레이션이에요. <button class="linkbtn" data-act="reset">처음부터 다시</button></p>`;
   }
@@ -430,7 +439,8 @@
     }
     box.className = "coach full";
     let body = "", actions = `<button class="btn primary" data-act="next">다음</button>`;
-    if (s.say) body = `${s.title ? `<h3>${s.title}</h3>` : ""}<p>${txt(s.say)}</p>`;
+    const cover = `<img class="cover" src="img/cover-${ch.id}.webp" alt="">`;
+    if (s.say) body = `${S.step === 0 ? cover : ""}${s.title ? `<h3>${s.title}</h3>` : ""}<p>${txt(s.say)}</p>`;
     if (s.setup) {
       body = `<h3>씨앗돈을 입금하세요</h3><p class="muted">얼마로 시작하느냐에 따라 경험이 달라져요.</p>
         <div class="seeds">${[[1_000_000, "100만 원", "비싼 주식은 몇 주밖에 못 사요. 나눠 담기가 어려워요."], [10_000_000, "1,000만 원", "여러 종목을 사 보기 좋은 기본값"], [100_000_000, "1억 원", "금액이 커도 잃는 비율은 똑같아요"]].map(([v, n, d]) => `<button class="seed" data-seed="${v}"><b>${n}</b><small>${d}</small></button>`).join("")}</div>`;
@@ -447,7 +457,8 @@
     }
     if (s.news) body = s.news.map((n) => `<article class="newscard"><span class="ntag">${n.tag}</span><h3>${n.title}</h3><p>${n.body}</p></article>`).join("");
     if (s.advance) { body = `<p>${txt(s.say)}</p><p class="muted">${dateLabel()} → ${dateLabel(D.dates[diOf(s.advance)])}</p>`; actions = `<button class="btn primary" data-act="advance">시간 보내기 ▶</button>`; }
-    if (s.recap) { body = `<h3>${ch.no}장 완료 · ${ch.title}</h3>${txt(s.recap)}`; actions = `<button class="btn primary" data-act="next">${S.ch + 1 < ST.chapters.length ? "다음 챕터로" : "마치기"}</button>`; }
+    if (S.step === 0 && s.news) body = cover + body;
+    if (s.recap) { body = `${cover}<h3>${ch.no}장 완료 · ${ch.title}</h3>${txt(s.recap)}`; actions = `<button class="btn primary" data-act="next">${S.ch + 1 < ST.chapters.length ? "다음 챕터로" : "마치기"}</button>`; }
     box.innerHTML = `${head}<div class="c-body">${body}</div><div class="c-act">${actions}</div>`;
   }
   function renderTimebar(s) {
