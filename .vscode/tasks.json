@@ -4,7 +4,7 @@
     {
       "label": "serve-prototype",
       "type": "shell",
-      "command": "node scripts/serve.mjs 8000",
+      "command": "node scripts/serve.mjs 5179",
       "isBackground": true,
       "problemMatcher": {
         "owner": "custom",

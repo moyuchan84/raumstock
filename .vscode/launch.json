@@ -5,7 +5,7 @@
       "name": "Prototype (Chrome)",
       "type": "chrome",
       "request": "launch",
-      "url": "http://localhost:8000",
+      "url": "http://localhost:5179",
       "webRoot": "${workspaceFolder}/prototype",
       "preLaunchTask": "serve-prototype"
     },
@@ -13,7 +13,7 @@
       "name": "Prototype (Edge)",
       "type": "msedge",
       "request": "launch",
-      "url": "http://localhost:8000",
+      "url": "http://localhost:5179",
       "webRoot": "${workspaceFolder}/prototype",
       "preLaunchTask": "serve-prototype"
     },
@@ -30,7 +30,7 @@
       "type": "node",
       "request": "launch",
       "program": "${workspaceFolder}/scripts/serve.mjs",
-      "args": ["8000"],
+      "args": ["5179"],
       "cwd": "${workspaceFolder}",
       "skipFiles": ["<node_internals>/**"]
     }
