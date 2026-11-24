@@ -464,7 +464,7 @@
       </div>
       <p class="fin-note"><span class="mini-owl">${ART.owl("ok")}</span>${f.note}</p>
       <p class="small">생각해 봐요: 손님이 갑자기 끊기면 이 회사는 얼마나 버틸 수 있을까?</p>
-      <p class="small">작년(${f.fy}) 연간 보고서 기준 반올림한 값 · 1달러=${fmt(D.usdKrw)}원 · <button class="linkbtn" data-lesson="fin">성적표 읽는 법</button></p>
+      <p class="small">작년(${f.fy}) 미국 증권거래위원회(SEC)에 낸 연간 보고서(10-K) 숫자 · 1달러=${fmt(D.usdKrw)}원 · <button class="linkbtn" data-lesson="fin">성적표 읽는 법</button></p>
     </details>`;
   }
 

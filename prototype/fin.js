@@ -1,48 +1,60 @@
-// 회사 성적표(재무제표) — 단위: 미국 달러 10억(billion), 회사 연간 보고서(10-K) 기준 반올림한 대략값.
-// prev: 탐험 직전 회계연도(게임 안에서 "작년 성적표"로 보여줌), now: 탐험한 해(마지막 공개 화면에서만 보여줌)
+// 회사 성적표(재무제표) — 단위: 미국 달러 10억(billion).
+// 출처: SEC EDGAR XBRL companyfacts API (data.sec.gov), 각 회계연도 10-K 최초 제출본의 값. 2026-11-24 확인.
+//   rev = RevenueFromContractWithCustomerExcludingAssessedTax (넷플릭스는 Revenues)
+//   op = OperatingIncomeLoss, net = NetIncomeLoss, assets = Assets
+//   liab = Liabilities, 없으면 Assets − 자본총계(비지배지분 포함)
+// prev: 탐험 직전 회계연도(게임 안에서 "작년 성적표"), now: 탐험한 해(마지막 공개 화면에서만)
 // 회계연도가 달력과 다른 회사: 줌(1월 말 결산), 애플(9월 말), 카니발(11월 말).
-// 출시 전에는 각 회사 공시(SEC EDGAR)로 숫자를 다시 확인할 것.
+// src: prev 값이 실린 10-K의 접수번호(accession number)
 window.RAUM_FIN = {
   ZM: {
-    fy: "1월 결산",
-    prev: { rev: 0.623, revBefore: 0.331, op: 0.012, net: 0.025, assets: 1.38, liab: 0.50 },
-    now: { rev: 2.65, net: 0.672 },
+    fy: "1월 결산", // 연도를 쓰면 비밀의 해가 드러나요
+    src: "0001585521-20-000095",
+    prev: { rev: 0.623, revBefore: 0.331, op: 0.013, net: 0.025, assets: 1.290, liab: 0.456 },
+    now: { rev: 2.651, net: 0.672 },
     note: "회사가 아직 작지만 매출이 1년에 두 배 가까이 커지고 있어요.",
   },
   AMZN: {
     fy: "12월 결산",
-    prev: { rev: 280.5, revBefore: 232.9, op: 14.5, net: 11.6, assets: 225.2, liab: 163.2 },
-    now: { rev: 386.1, net: 21.3 },
+    src: "0001018724-20-000004",
+    prev: { rev: 280.522, revBefore: 232.887, op: 14.541, net: 11.588, assets: 225.248, liab: 163.188 },
+    now: { rev: 386.064, net: 21.331 },
     note: "엄청나게 많이 팔지만, 번 돈을 창고·배송에 다시 써서 이익률은 낮은 편이에요.",
   },
   NFLX: {
     fy: "12월 결산",
-    prev: { rev: 20.16, revBefore: 15.79, op: 2.60, net: 1.87, assets: 33.98, liab: 26.39 },
-    now: { rev: 25.0, net: 2.76 },
+    src: "0001065280-20-000040",
+    prev: { rev: 20.156, revBefore: 15.794, op: 2.604, net: 1.867, assets: 33.976, liab: 26.394 },
+    now: { rev: 24.996, net: 2.761 },
     note: "드라마·영화를 만들려고 빚을 많이 냈어요. 가입자가 늘어야 갚을 수 있어요.",
   },
   AAPL: {
     fy: "9월 결산",
-    prev: { rev: 260.2, revBefore: 265.6, op: 63.9, net: 55.3, assets: 338.5, liab: 248.0 },
-    now: { rev: 274.5, net: 57.4 },
+    src: "0000320193-19-000119",
+    prev: { rev: 260.174, revBefore: 265.595, op: 63.930, net: 55.256, assets: 338.516, liab: 248.028 },
+    now: { rev: 274.515, net: 57.411 },
     note: "1,000원어치를 팔면 약 250원을 남기는, 아주 돈을 잘 버는 회사예요.",
   },
   AAL: {
     fy: "12월 결산",
-    prev: { rev: 45.8, revBefore: 44.5, op: 3.07, net: 1.69, assets: 60.0, liab: 60.1 },
-    now: { rev: 17.3, net: -8.9 },
+    src: "0000006201-20-000023",
+    prev: { rev: 45.768, revBefore: 44.541, op: 3.065, net: 1.686, assets: 59.995, liab: 60.113 },
+    now: { rev: 17.337, net: -8.885 },
     note: "빚이 가진 것보다 많아요(자본잠식). 손님이 끊기면 버틸 힘이 가장 약해요.",
   },
   CCL: {
     fy: "11월 결산",
-    prev: { rev: 20.8, revBefore: 18.9, op: 3.26, net: 2.99, assets: 45.1, liab: 19.7 },
-    now: { rev: 5.6, net: -10.2 },
+    src: "0000815097-20-000003",
+    prev: { rev: 20.825, revBefore: 18.881, op: 3.276, net: 2.990, assets: 45.058, liab: 19.693 },
+    now: { rev: 5.595, net: -10.236 },
     note: "큰 배를 많이 가지고 있어서, 손님이 없어도 배를 관리하는 돈이 계속 나가요.",
   },
   XOM: {
     fy: "12월 결산",
-    prev: { rev: 264.9, revBefore: 290.2, op: null, net: 14.3, assets: 362.6, liab: 163.7 },
-    now: { rev: 181.5, net: -22.4 },
+    src: "0000034088-20-000016",
+    // 엑슨모빌은 영업이익(OperatingIncomeLoss)을 따로 공시하지 않아서 비워 둠
+    prev: { rev: 255.583, revBefore: 279.332, op: null, net: 14.340, assets: 362.597, liab: 163.659 },
+    now: { rev: 178.574, net: -22.440 },
     note: "석유값이 오르면 많이 벌고, 내리면 적게 벌어요. 실적이 석유값을 따라가요.",
   },
 };
