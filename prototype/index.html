@@ -295,6 +295,13 @@ dd.kid { color: #ffd98a; font-size: .85rem; }
 .bigstars { font-size: 2.2rem; color: var(--accent); letter-spacing: .1em; }
 .reveal { background: color-mix(in srgb, var(--mint) 12%, var(--surface)); border-radius: 12px; padding: 10px 12px; }
 .dotc { width: 10px; height: 10px; border-radius: 50%; display: inline-block; margin-right: 6px; }
+.timeline { list-style: none; margin: 0; padding: 0 0 0 54px; display: grid; gap: 8px; position: relative; }
+.timeline::before { content: ""; position: absolute; left: 22px; top: 8px; bottom: 8px; width: 2px; background: linear-gradient(var(--accent), #a98bff, var(--mint)); opacity: .5; }
+.timeline li { position: relative; }
+.tyear { position: absolute; left: -54px; top: 50%; transform: translateY(-50%); width: 46px; text-align: center; font-size: .72rem; font-weight: 800; color: #141a2b; background: var(--accent); border-radius: 8px; padding: 3px 0; }
+.newscard.story { background: linear-gradient(135deg, #24345e, var(--surface)); }
+.yq { grid-template-columns: 1fr 1fr; display: grid; }
+.reveal.ok { background: color-mix(in srgb, var(--accent) 18%, var(--surface)); }
 .chap.stagecard { border-color: color-mix(in srgb, #a98bff 50%, var(--line)); }
 @media (prefers-reduced-motion: reduce) { .sp-row, .coin3d { animation: none; } }
 
@@ -325,7 +332,7 @@ dd.kid { color: #ffd98a; font-size: .85rem; }
     <p class="sp-tag">진짜 시장의 기록으로<br>투자의 흐름을 배워요</p>
     <div class="sp-modes">
       <button data-splash="story"><span>📖</span><b>스토리</b><small>2020년 실제 시장 · 7장</small></button>
-      <button data-splash="stage"><span>🏁</span><b>스테이지</b><small>실제 4 · 가상 7</small></button>
+      <button data-splash="stage"><span>🏁</span><b>스테이지</b><small>1987 → 2023 실제 14 · 가상 7</small></button>
       <button data-splash="random"><span>🎲</span><b>랜덤 도전</b><small>실제 또는 가상, 매번 다르게</small></button>
       <button data-splash="train"><span>🎯</span><b>실전 훈련</b><small>진실과 오해 · 선택의 순간</small></button>
     </div>
@@ -341,6 +348,8 @@ dd.kid { color: #ffd98a; font-size: .85rem; }
 <script src="scenario-2020.js"></script>
 <script src="story.js"></script>
 <script src="train.js"></script>
+<script src="stages-real.js"></script>
+<script src="stages-hist.js"></script>
 <script src="stage.js"></script>
 <script src="game.js"></script>
 <script type="module">

@@ -69,6 +69,27 @@ window.RAUM_STAGE = (() => {
     };
   }
 
+  // ---------- 역사 스테이지 (stages-real.js + stages-hist.js) ----------
+  const H = window.RAUM_HIST || {};
+  const HS = window.RAUM_HIST_STAGES || { A: {}, stages: [] };
+  function histBuild({ hid, fromIdx, toIdx, hideDates }) {
+    const src = H[hid], def = HS.stages.find((x) => x.id === hid);
+    const a = fromIdx ?? src.start, b = toIdx ?? src.dates.length - 1;
+    const s0 = Math.max(0, a - PRE);
+    const syms = Object.keys(src.prices);
+    const series = Object.fromEntries(syms.map((x) => [x, src.prices[x].slice(s0, b + 1).map((v) => v * def.fx)]));
+    const dates = src.dates.slice(s0, b + 1);
+    const news = {};
+    for (let i = a - s0; i < dates.length; i++) {
+      const items = def.news.filter((n) => n.date > dates[i - 1] && n.date <= dates[i]);
+      if (items.length) news[i] = items;
+    }
+    return {
+      assets: syms.map((x) => ({ sym: x, ...HS.A[x] })), series, start: a - s0, end: dates.length - 1, news, dates,
+      label: (i) => (hideDates ? `D+${i - (a - s0)}` : md(dates[i])), index: def.index,
+    };
+  }
+
   // ---------- 가상 시나리오 엔진 ----------
   const V_ASSETS = [
     { sym: "RE", name: "라움전자", icon: "전", color: "#6aa8ff", desc: "반도체·스마트폰 (성장주, 금리에 약함)", b: { m: 1.35, rate: -0.0016, oil: 0, idio: 0.017 }, sector: "tech", p0: 72000 },
@@ -198,15 +219,22 @@ window.RAUM_STAGE = (() => {
     { id: "r4", title: "백신 랠리", period: "2020.10–12", icon: "💉", from: "2020-10-01", to: "2020-12-31", syms: ["ZM", "AAL", "CCL", "XOM", "AAPL", "SPY"], sub: "같은 뉴스, 정반대 반응",
       reveal: "실제 2020년 가을이었어요. 11월 9일 백신 효과 발표 하루 만에 여행·석유 회사는 폭등하고 집콕 수혜주인 줌은 급락했어요. 시장의 주인공이 하루아침에 바뀌었어요." },
   ];
+  REAL.forEach((x, i) => (x.year = i === 0 ? 2019 : 2020));
+  const TIMELINE = [
+    ...HS.stages.map((x) => ({ id: x.id, year: x.year, title: x.title, period: x.period, icon: x.icon, sub: x.sub, diff: x.diff, hist: true, kr: !!x.krw })),
+    ...REAL.map((x) => ({ ...x, diff: x.id === "r2" ? 3 : 2 })),
+  ].sort((a, b) => a.year - b.year || a.period.localeCompare(b.period));
+  const YEARS = [...new Set(TIMELINE.map((x) => x.year))];
   const VIRTUAL = Object.entries(SCEN).map(([k, v], i) => ({ id: "v" + (i + 1), kind: k, title: v.title, icon: v.icon, sub: v.sub }));
 
   // ---------- 상태 ----------
   let cache = { key: null, data: null };
   function data(run) {
-    const key = JSON.stringify([run.id, run.seed, run.kind, run.from]);
+    const key = JSON.stringify([run.id, run.seed, run.kind, run.from, run.hid, run.fromIdx]);
     if (cache.key === key) return cache.data;
     let d;
-    if (run.real) d = realBuild({ from: run.from, to: run.to, syms: run.syms, hideDates: run.hidden });
+    if (run.hid) d = histBuild({ hid: run.hid, fromIdx: run.fromIdx, toIdx: run.toIdx, hideDates: run.hidden });
+    else if (run.real) d = realBuild({ from: run.from, to: run.to, syms: run.syms, hideDates: run.hidden });
     else d = virtualBuild(run.kind, run.seed);
     cache = { key, data: d };
     return d;
@@ -291,24 +319,27 @@ window.RAUM_STAGE = (() => {
     return `<section class="hero thero"><p class="eyebrow">STAGES</p><h1>스테이지 & 랜덤 도전</h1><p class="muted">60일 남짓의 짧은 판이에요. 1,000만 원으로 시작해 별 3개에 도전하세요.</p>
         <p class="goals"><span>★ 수익 내기</span><span>★ 시장(지수 ETF)보다 잘하기</span><span>★ 가장 크게 떨어졌을 때도 −15% 안쪽</span></p></section>
       <div class="rand">
-        <button class="btn primary" data-stg="random:real">🎲 실제 랜덤<small>2019~2020 중 무작위 구간 · 날짜는 비밀</small></button>
+        <button class="btn primary" data-stg="random:real">🎲 실제 랜덤<small>1987~2023 중 무작위 구간 · 몇 년인지 맞혀 봐요</small></button>
         <button class="btn primary alt" data-stg="random:virtual">🎲 가상 랜덤<small>무작위 시나리오 · 매번 다른 흐름</small></button>
       </div>
-      <p class="small muted">랜덤 최고 기록: 실제 ${stars(st["random-real"] || 0)} · 가상 ${stars(st["random-virtual"] || 0)} · 지금까지 ${S.stgPlays || 0}판</p>
+      <p class="small muted">랜덤 최고 기록: 실제 ${stars(st["random-real"] || 0)} · 가상 ${stars(st["random-virtual"] || 0)} · 지금까지 ${S.stgPlays || 0}판 · 연도 맞히기 ${S.stgYearHits || 0}번</p>
       ${S.stg && !S.stg.done ? `<button class="btn wide" data-stg="resume">▶ 하던 판 이어하기 · ${S.stg.title}</button>` : ""}
-      <h2 class="sec">실제 상황 <small>진짜 가격과 뉴스</small></h2><ul class="stages">${REAL.map((s) => card(s, true)).join("")}</ul>
+      <h2 class="sec">⏳ 타임머신 · 실제 역사 <small>${TIMELINE.length}개 · 1987 → 2023</small></h2>
+      <ol class="timeline">${TIMELINE.map((s) => `<li><span class="tyear">${s.year}</span><button class="stage real" data-stg="start:${s.id}"><span class="sicon">${s.icon}</span><span class="sbody"><span class="sbadge">${s.kr ? "🇰🇷 한국 · " : ""}실제 ${s.period} · 난이도 ${"●".repeat(s.diff)}${"○".repeat(3 - s.diff)}</span><b>${s.title}</b><small>${s.sub}</small></span><span class="sstars">${stars(st[s.id] || 0)}</span></button></li>`).join("")}</ol>
       <h2 class="sec">가상 상황 <small>가상 회사 · 시나리오 엔진</small></h2><ul class="stages">${VIRTUAL.map((s) => card(s, false)).join("")}</ul>
-      <p class="small muted">가상 상황의 회사와 뉴스는 모두 지어낸 것이에요. 실제 상황은 실제 일별 수정 종가(1달러=1,200원)예요. 다른 해(2008년 금융위기, 2022년 금리 인상 등) 실제 스테이지는 데이터를 추가하면 늘릴 수 있어요.</p>`;
+      <p class="small muted">가상 상황의 회사와 뉴스는 모두 지어낸 것이에요. 실제 상황은 실제 일별 수정 종가(1달러=1,200원)예요. 역사 스테이지는 실제 일별 수정 종가(Yahoo Finance 기반)이고, 미국 주식은 1달러=1,200원으로 계산했어요.</p>`;
   }
   function viewPlay(S) {
     const run = S.stg, d = data(run), i = run.day;
     const v = value(run, d), r = v / START_CASH - 1, ir = price(d, d.index, i) / price(d, d.index, d.start) - 1;
     const s = run.sel, p = price(d, s, i), pc = price(d, s, i - 1), own = run.pos[s];
     const left = d.end - i;
+    const story = i === d.start && run.intro && !run.hidden ? `<article class="newscard fresh story"><span class="ntag">⏳ 타임머신 도착 · ${run.year}년</span><p>${run.intro}</p>${kidBox(S, run.kidIntro)}</article>` : "";
     const todayNews = Object.entries(d.news).filter(([k]) => Number(k) <= i && Number(k) > i - 5).flatMap(([k, arr]) => arr.map((n) => ({ ...n, k: Number(k) }))).reverse();
     return `<div class="splay">
       <div class="shead"><button class="tback" data-stg="map">‹ 스테이지</button><span class="stitle">${run.icon || "🎲"} ${run.title}</span><span class="sday">${d.label(i)} · ${left}일 남음</span></div>
       <div class="sbar"><div><small>내 자산</small><b>${won(v)}</b><span class="${cls(r)}">${pct(r)}</span></div><div><small>시장(${name(d, d.index)})</small><b class="${cls(ir)}">${pct(ir)}</b></div><div><small>거래</small><b>${run.trades}번</b></div></div>
+      ${story}
       <div class="chips sassets">${d.assets.map((a) => { const c = price(d, a.sym, i) / price(d, a.sym, i - 1) - 1; return `<button class="achip ${a.sym === s ? "on" : ""}" data-stg="sel:${a.sym}"><i style="background:${a.color}">${a.icon}</i>${a.name}<small class="${cls(c)}">${pct(c)}</small></button>`; }).join("")}</div>
       <div class="tcard sbox">
         <div class="sprice"><b>${name(d, s)}</b><span>${fmt(p)}원</span><small class="${cls(p - pc)}">${pct(p / pc - 1)}</small></div>
@@ -324,10 +355,22 @@ window.RAUM_STAGE = (() => {
       <div class="stime"><button class="btn ghost" data-stg="next:1">다음 날 ▶</button><button class="btn ghost" data-stg="next:5">5일 ▶</button><button class="btn ghost" data-stg="next:999">끝까지 ⏭</button></div>
     </div>`;
   }
+  function yearQuiz(S) {
+    const run = S.stg;
+    if (!run.qopts) {
+      const others = YEARS.filter((y) => y !== run.year).sort(() => Math.random() - 0.5).slice(0, 3);
+      run.qopts = [run.year, ...others].sort((a, b) => a - b);
+    }
+    return `<section class="tcard sresult"><p class="eyebrow">🎲 비밀 공개 전에</p><h2>이 시장은 몇 년이었을까요?</h2>
+      <p class="muted">뉴스와 회사들의 움직임에서 힌트를 찾아보세요.</p>
+      <div class="opts yq">${run.qopts.map((y) => `<button class="opt" data-stg="guess:${y}">${y}년</button>`).join("")}</div></section>`;
+  }
   function viewResult(S) {
     const run = S.stg, d = data(run), R = run.result;
+    if (run.random && run.real && run.guess == null) return yearQuiz(S);
     const rows = d.assets.map((a) => ({ a, r: price(d, a.sym, d.end) / price(d, a.sym, d.start) - 1 })).sort((x, y) => y.r - x.r);
-    const reveal = run.real ? (run.hidden ? `<p class="reveal">🔓 이 구간은 실제 <b>${md(d.dates[d.start])} ~ ${md(d.dates[d.end])}</b>이었어요.</p>` : "") + (run.revealText ? `<p>${run.revealText}</p>` : "")
+    const guessLine = run.guess != null ? `<p class="reveal ${run.guess === run.year ? "ok" : ""}">${run.guess === run.year ? "🎯 정답!" : `아쉬워요! ${run.guess}년이 아니라`} <b>${run.year}년</b>이었어요.</p>` : "";
+    const reveal = run.real ? guessLine + (run.hidden ? `<p class="reveal">🔓 이 구간은 실제 <b>${md(d.dates[d.start])} ~ ${md(d.dates[d.end])}</b>이었어요.</p>` : "") + (run.revealText ? `<p>${run.revealText}</p>` : "")
       : `<p class="reveal">🔓 이번 시장은 <b>${SCEN[run.kind].icon} ${SCEN[run.kind].title}</b>이었어요.</p><p>${SCEN[run.kind].reveal}</p>`;
     const tip = R.r < R.ir - 0.005 ? (run.trades > 12 ? "거래가 많았어요. 수수료와 타이밍 실수가 쌓였을 수 있어요. 다음엔 사기 전에 '왜 사는지'를 정하고 덜 움직여 보세요." : "시장보다 뒤처졌어요. 시장 전체(지수 ETF)를 들고만 있어도 얻을 수 있었던 결과와 비교해 보세요.") : R.mdd <= -0.15 ? "결과는 좋았지만 중간에 크게 흔들렸어요. 나눠 사기와 손절 기준으로 흔들림을 줄여 보세요." : "결과와 흔들림 모두 잘 관리했어요. 운이었는지 판단이었는지 돌아보세요.";
     return `<section class="tcard sresult">
@@ -349,6 +392,8 @@ window.RAUM_STAGE = (() => {
     return sub === "play" ? viewPlay(S) : sub === "result" ? viewResult(S) : viewMap(S);
   }
   function start(S, id) {
+    const hs = HS.stages.find((x) => x.id === id);
+    if (hs && H[id]) return newRun(S, { id, hid: id, real: true, title: hs.title, icon: hs.icon, revealText: hs.reveal, intro: hs.intro, kidIntro: hs.kid, year: hs.year });
     const re = REAL.find((x) => x.id === id);
     if (re) return newRun(S, { id, real: true, from: re.from, to: re.to, syms: re.syms, title: re.title, icon: re.icon, revealText: re.reveal });
     const vi = VIRTUAL.find((x) => x.id === id);
@@ -357,10 +402,19 @@ window.RAUM_STAGE = (() => {
   function random(S, real) {
     const r = rng((Date.now() ^ Math.floor(Math.random() * 2147483647)) >>> 0);
     if (real) {
-      const syms = ["AAPL", "AMZN", "NFLX", "ZM", "AAL", "CCL", "XOM"].sort(() => r.u() - 0.5).slice(0, 5).concat("SPY");
-      const first = PRE, last = D.dates.length - 61;
-      const a = first + r.int(last - first);
-      newRun(S, { id: "random-real", random: true, real: true, hidden: true, from: D.dates[a], to: D.dates[a + 59], syms, title: "비밀의 60일", icon: "🎲" });
+      // 시대를 먼저 고르고(2019–20 데이터 포함), 그 안에서 최대 60거래일 구간을 무작위로
+      const pool = [...HS.stages.filter((x) => H[x.id]).map((x) => x.id), "daily", "daily"];
+      const pick = pool[r.int(pool.length)];
+      if (pick === "daily") {
+        const syms = ["AAPL", "AMZN", "NFLX", "ZM", "AAL", "CCL", "XOM"].sort(() => r.u() - 0.5).slice(0, 5).concat("SPY");
+        const a = PRE + r.int(D.dates.length - 61 - PRE);
+        newRun(S, { id: "random-real", random: true, real: true, hidden: true, from: D.dates[a], to: D.dates[a + 59], syms, title: "비밀의 60일", icon: "🎲", year: Number(D.dates[a + 29].slice(0, 4)) });
+      } else {
+        const src = H[pick], len = src.dates.length - src.start, span = Math.min(60, len);
+        const fromIdx = src.start + r.int(Math.max(1, len - span + 1));
+        const def = HS.stages.find((x) => x.id === pick);
+        newRun(S, { id: "random-real", random: true, real: true, hidden: true, hid: pick, fromIdx, toIdx: fromIdx + span - 1, title: "비밀의 시대", icon: "🎲", revealText: def.reveal, year: Number(src.dates[fromIdx + Math.floor((span - 1) / 2)].slice(0, 4)) }); // 정답 연도 = 구간 가운데 날짜의 해
+      }
     } else {
       const kinds = Object.keys(SCEN);
       newRun(S, { id: "random-virtual", random: true, kind: kinds[r.int(kinds.length)], seed: 1 + r.int(1e6), title: "알 수 없는 시장", icon: "🎲" });
@@ -377,6 +431,7 @@ window.RAUM_STAGE = (() => {
     else if (a === "sel") S.stg.sel = b;
     else if (a === "buy" || a === "sell") trade(S, a, Number(b));
     else if (a === "next") advance(S, Number(b));
+    else if (a === "guess") { S.stg.guess = Number(b); if (S.stg.guess === S.stg.year) S.stgYearHits = (S.stgYearHits || 0) + 1; }
   }
   return { _data: data, view, click, go: (s) => (sub = s), random, counts: (S) => Object.values(S.stgStars || {}).reduce((t, x) => t + x, 0) };
 })();
