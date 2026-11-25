@@ -161,6 +161,72 @@ button:disabled { opacity: .4; cursor: default; }
 @keyframes spin { to { transform: rotate(360deg); } }
 .yr { position: absolute; bottom: 12%; font-size: 2.2rem; padding: 4px 18px; border-radius: 16px; background: var(--sun); border: 3px solid var(--ink); animation: zoom .6s .6s both; }
 
+/* 첫 화면: 영상 타일 · 투자 말 사전 */
+.sec { margin: 24px 4px 10px; font-size: 1.3rem; font-weight: normal; display: flex; align-items: baseline; flex-wrap: wrap; gap: 8px; }
+.sec small { font-size: .85rem; color: var(--muted); }
+.tiles { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; }
+.tile { position: relative; display: grid; justify-items: start; align-content: start; gap: 2px; padding: 12px; border-radius: 18px; background: var(--paper); border: 3px solid var(--ink); box-shadow: 4px 4px 0 var(--ink); text-align: left; font-size: 1.02rem; line-height: 1.25; }
+.tile span { font-size: 1.9rem; }
+.tile b { font-size: .8rem; color: var(--muted); font-weight: normal; }
+.tile i { position: absolute; top: 8px; right: 10px; font-style: normal; }
+.tile.done { background: #eafff6; }
+.tile:active { transform: translate(3px, 3px); box-shadow: 1px 1px 0 var(--ink); }
+.words { display: grid; gap: 8px; }
+.word { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 8px; align-items: center; }
+.word > button:first-child { display: flex; gap: 12px; align-items: center; padding: 10px 12px; border-radius: 16px; background: var(--paper); border: 3px solid var(--ink); box-shadow: 3px 3px 0 var(--ink); text-align: left; }
+.word > button:first-child span { font-size: 1.7rem; }
+.word small { display: block; color: var(--muted); font-size: .9rem; }
+
+/* 영상 끝 퀴즈 */
+.quiz { display: grid; gap: 10px; max-width: 420px; width: 100%; text-align: center; }
+.quiz .art { width: 100%; height: auto; display: block; }
+.quiz h2 { margin: 0 0 4px; font-size: 1.45rem; font-weight: normal; }
+.quiz .opt { padding: 14px; border-radius: 18px; background: var(--paper); color: var(--ink); border: 3px solid #fff; font-size: 1.2rem; }
+.quiz .opt:disabled { opacity: 1; }
+.quiz .opt.ok { background: #c9f2e3; } .quiz .opt.no { background: #ffd0d0; }
+.quiz .res { padding: 12px; border-radius: 18px; background: #24315a; font-size: 1.1rem; animation: rise .3s; }
+.quiz .big { color: var(--ink); }
+
+/* 투자 학교 장면 */
+@keyframes fade { to { opacity: 1; } }
+@keyframes grow { from { transform: scaleY(0); } }
+@keyframes tilt { to { transform: rotate(var(--t)); } }
+.poprow { display: flex; flex-wrap: wrap; justify-content: center; align-items: center; gap: 12px; max-width: 92%; margin-bottom: 14%; font-size: clamp(2.6rem, 11vw, 4.2rem); }
+.poprow.many { gap: 6px; font-size: clamp(2rem, 9vw, 3.4rem); }
+.poprow span { opacity: 0; animation: drop .5s var(--d) cubic-bezier(.3, 1.5, .5, 1) forwards; }
+.bill { width: 84%; padding: 12px 16px; border-radius: 20px; background: var(--paper); border: 4px solid var(--ink); box-shadow: 6px 6px 0 var(--ink); display: grid; gap: 6px; font-size: clamp(.95rem, 3.8vw, 1.15rem); }
+.bill h3 { margin: 0 0 2px; text-align: center; font-size: 1.15em; font-weight: normal; }
+.bill .r { display: flex; justify-content: space-between; gap: 10px; opacity: 0; animation: come .45s var(--d) forwards; }
+.bill .r b { font-weight: normal; white-space: nowrap; }
+.bill .r.tot { border-top: 3px dashed var(--ink); padding-top: 8px; font-size: 1.25em; }
+.bs { display: flex; align-items: flex-end; gap: 12px; height: 74%; }
+.bs .col { display: flex; flex-direction: column; justify-content: flex-end; width: 32vw; max-width: 150px; height: 100%; }
+.bs .blk { display: grid; place-items: center; height: calc(var(--h) * .84); text-align: center; font-style: normal; line-height: 1.2; border: 3px solid var(--ink); border-radius: 12px; transform-origin: bottom; animation: grow .6s var(--d) both; }
+.bs .blk + .blk { margin-top: -3px; }
+.bs .blk.a { background: var(--sun); } .bs .blk.d { background: #cfe0ff; } .bs .blk.e { background: #c9f2e3; }
+.bs.warn .blk.d { background: #ffd0d0; }
+.bs small { margin-top: 6px; text-align: center; font-size: .9rem; }
+.bs .eq { align-self: center; font-size: 2.6rem; font-weight: normal; }
+.rline { width: 86%; margin-bottom: 14%; padding: 10px 12px 6px; border-radius: 18px; background: var(--paper); border: 3px solid var(--ink); box-shadow: 5px 5px 0 var(--ink); }
+.rline svg { width: 100%; height: auto; display: block; overflow: visible; }
+.rline polyline, .mini polyline { fill: none; stroke-width: 3.5; stroke-linejoin: round; stroke-linecap: round; stroke-dasharray: 700; stroke-dashoffset: 700; animation: draw 2.4s .3s ease-out forwards; }
+.rline .dip { fill: none; stroke: var(--sun); stroke-width: 4; opacity: 0; animation: fade .4s 2.6s forwards; }
+.rline .ax { margin-top: 12px; display: flex; justify-content: space-between; font-size: .85rem; color: var(--muted); }
+.minis { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; width: 88%; margin-bottom: 14%; }
+.mini { display: grid; gap: 2px; padding: 8px; border-radius: 16px; background: var(--paper); border: 3px solid var(--ink); box-shadow: 4px 4px 0 var(--ink); text-align: center; font-size: .95rem; }
+.mini svg { width: 100%; height: 70px; }
+.mini polyline { stroke-width: 6; }
+.candles { width: 78%; margin-bottom: 20%; overflow: visible; }
+.candles g { opacity: 0; animation: fade .3s var(--d) forwards; }
+.saw { display: grid; justify-items: center; width: 84%; margin-bottom: 8%; }
+.saw .bar { width: 100%; display: flex; justify-content: space-between; padding: 10px 14px; border-radius: 16px; background: var(--paper); border: 4px solid var(--ink); box-shadow: 5px 5px 0 var(--ink); font-size: clamp(1.05rem, 4.4vw, 1.4rem); animation: tilt 1s .6s ease-in-out forwards; }
+.saw .piv { width: 0; height: 0; border-left: 26px solid transparent; border-right: 26px solid transparent; border-bottom: 44px solid var(--ink); }
+.exch { display: flex; align-items: center; gap: 12px; margin-bottom: 12%; font-size: clamp(2.6rem, 11vw, 3.6rem); }
+.exch span { display: grid; justify-items: center; padding: 8px 16px; border-radius: 20px; background: var(--paper); border: 4px solid var(--ink); box-shadow: 5px 5px 0 var(--ink); animation: zoom .5s both; }
+.exch span:last-child { animation-delay: .8s; }
+.exch small { font-size: 1.1rem; }
+.exch b { font-size: 2.2rem; font-weight: normal; animation: bob 1.6s ease-in-out infinite; }
+
 /* 시간 여행 */
 .travel { position: fixed; inset: 0; z-index: 7; pointer-events: none; display: grid; place-items: center; }
 .travel span { font-size: 5rem; animation: spin 1s linear infinite; filter: drop-shadow(4px 4px 0 var(--ink)); }
