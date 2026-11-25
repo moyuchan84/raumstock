@@ -205,7 +205,7 @@ dd.kid { color: #ffd98a; font-size: .85rem; }
 .kidline { background: color-mix(in srgb, var(--accent) 10%, var(--surface)); border-radius: 10px; padding: 8px 10px; font-size: .85rem; color: #ffe3a3; line-height: 1.55; }
 .kidtoggle { font-size: .72rem; font-weight: 700; padding: 3px 9px; border-radius: 99px; background: var(--surface-2); color: var(--muted); white-space: nowrap; }
 .kidtoggle.on { background: color-mix(in srgb, var(--accent) 22%, transparent); color: var(--accent); }
-.c-head .kidtoggle { margin-left: auto; } .c-head .kidtoggle + small { margin-left: 8px; }
+.c-head .kidtoggle { margin-left: auto; } .c-head .spk { margin-left: 6px; } .c-head .kidtoggle + small { margin-left: 8px; }
 .kv.list dt { display: grid; }
 .fbars small.kid { grid-column: 1 / -1; text-align: left; font-size: .74rem; color: #ffd98a; margin-top: -4px; }
 
@@ -303,6 +303,8 @@ dd.kid { color: #ffd98a; font-size: .85rem; }
 .yq { grid-template-columns: 1fr 1fr; display: grid; }
 .reveal.ok { background: color-mix(in srgb, var(--accent) 18%, var(--surface)); }
 .chap.mpcard { border-color: color-mix(in srgb, var(--accent) 50%, var(--line)); }
+.sp-modes .sp-kid { grid-column: 1 / -1; display: grid; gap: 2px; justify-items: start; padding: 14px; border-radius: 16px; text-decoration: none; color: #16223d; background: linear-gradient(135deg, #ffb3c7, #ffd76a); }
+.sp-modes .sp-kid small { color: #4a3a2a; font-size: .78rem; } .sp-modes .sp-kid span { font-size: 1.4rem; } .sp-modes .sp-kid b { font-size: 1.05rem; }
 .sp-modes .sp-mp { grid-column: 1 / -1; background: linear-gradient(135deg, #3a2d6b, #1b2a4d); }
 .mpbar { background: var(--surface); border: 1px solid var(--accent); border-radius: 16px; padding: 12px; display: grid; gap: 8px; }
 .mphead { display: flex; justify-content: space-between; align-items: baseline; }
@@ -373,6 +375,7 @@ dd.kid { color: #ffd98a; font-size: .85rem; }
     <h1>라움스톡</h1>
     <p class="sp-tag">진짜 시장의 기록으로<br>투자의 흐름을 배워요</p>
     <div class="sp-modes">
+      <a href="kid.html" class="sp-kid"><span>🧒</span><b>꼬마 탐험가</b><small>7~9세 · 그림과 소리로 떠나는 2020년 여행</small></a>
       <button data-splash="story"><span>📖</span><b>스토리</b><small>2020년 실제 시장 · 7장</small></button>
       <button data-splash="stage"><span>🏁</span><b>스테이지</b><small>1987 → 2023 실제 14 · 가상 7</small></button>
       <button data-splash="random"><span>🎲</span><b>랜덤 도전</b><small>실제 또는 가상, 매번 다르게</small></button>
@@ -387,6 +390,7 @@ dd.kid { color: #ffd98a; font-size: .85rem; }
 <div id="sheet" role="dialog" aria-modal="true"></div>
 <div id="toast" role="status"></div>
 
+<script src="speak.js"></script>
 <script src="daily.js"></script>
 <script src="fin.js"></script>
 <script src="scenario-2020.js"></script>

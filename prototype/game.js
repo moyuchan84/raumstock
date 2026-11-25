@@ -446,7 +446,8 @@
     const s = ["stage", "train", "mp", "teach"].includes(S.view) ? null : step();
     if (!s) { box.className = "coach hide"; box.innerHTML = ""; renderTimebar(s); return; }
     const ch = chapter();
-    const head = `<div class="c-head">${COACH_AV}<span>${ch.no}장 · ${ch.title}</span>${kidToggle()}<small>${S.step + 1}/${ch.steps.length}</small></div>`;
+    const spk = window.RAUM_SPEAK?.supported ? `<button class="kidtoggle spk" data-act="speak" aria-label="소리로 듣기">🔊</button>` : "";
+    const head = `<div class="c-head">${COACH_AV}<span>${ch.no}장 · ${ch.title}</span>${kidToggle()}${spk}<small>${S.step + 1}/${ch.steps.length}</small></div>`;
     renderTimebar(s);
     if (s.task || s.free) {
       box.className = "coach mini";
@@ -612,6 +613,12 @@
     if (act === "day") return advance(1, step()?.free);
     if (act === "week") return advance(5, step()?.free);
     if (act === "splash") return showSplash();
+    if (act === "speak") {
+      const s = step(); if (!s) return;
+      const q = s.quiz ? s.quiz.q + " " + s.quiz.opts.join(", ") : s.predict ? s.predict.q + " " + s.predict.opts.join(", ") : "";
+      const t = s.task || s.free ? txt(s.task) : s.news ? s.news.map((n) => n.title + ". " + n.body).join(" ") : q || (S.kid && s.kid) || txt(s.say) || "";
+      window.RAUM_SPEAK.setOn(true); return window.RAUM_SPEAK.say(t);
+    }
     if (act === "kid") { S.kid = !S.kid; if ($("#sheet").classList.contains("open") && ord) renderOrder(); return render(); }
     if (act === "free-time") { S.freeMode = true; return go("watch"); }
     if (act === "reset") {
