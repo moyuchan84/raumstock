@@ -392,9 +392,15 @@
     $, c1,
     say: (text) => { cancelTalk(); SP.say(text); },
     done: (id) => { L[id] = "seen"; saveL(); },
-    seen: (id) => !!L[id],
+    // 예전에 본 체험 기록(lab1…)은 어른 버전을 본 것으로 쳐요
+    seen: (k) => !!(L[k] || (k.endsWith(":full") && L[k.split(":")[0]])),
     show: () => { cancelTalk(); view = "lab"; S.phase = "intro"; save(); render(); scrollTo(0, 0); },
+    exit: () => goHome(),
+    mode: () => mode(),
   });
+  // 아이 버전(easy) · 어른 버전(full): 겪어 보기 설명이 달라져요
+  const mode = () => (L.mode === "full" ? "full" : "easy");
+  function goHome() { cancelTalk(); view = "home"; if (S.phase === "end") S.phase = "intro"; save(); render(); scrollTo(0, 0); }
 
   // ---------- 그리기 ----------
   function renderTop() {
@@ -402,7 +408,7 @@
     const [m] = mood();
     $("#top").innerHTML = `
       <a class="iconbtn" href="index.html" aria-label="라움스톡 처음 화면">🏠</a>
-      ${inTrip ? `<span class="chip cal" id="cal">📅 ${dateKo().replace("2020년 ", "")}</span><span class="chip" title="시장 기분">${m}</span>` : `<span class="chip">🧒 꼬마 탐험가</span>`}
+      ${inTrip ? `<span class="chip cal" id="cal">📅 ${dateKo().replace("2020년 ", "")}</span><span class="chip" title="시장 기분">${m}</span>` : `<span class="chip">${mode() === "full" ? "🧑 어른 버전" : "🧒 꼬마 탐험가"}</span>`}
       <span class="sp"></span>
       ${inTrip ? `<span class="chip">🪙 ${c1(total())}</span>` : ""}
       ${SP.supported ? `<button class="iconbtn ${SP.on ? "" : "off"}" data-act="sound" aria-label="소리 ${SP.on ? "끄기" : "켜기"}">${SP.on ? "🔊" : "🔇"}</button>` : ""}`;
@@ -438,29 +444,61 @@
       <p class="note">값은 2020년 진짜 기록이에요 (1달러 = 1,200원). 조각은 소수점까지 살 수 있다고 생각해요. 교육용 연습이에요.</p>`;
   }
 
+  // ---------- 다음에 할 것 ----------
+  // 여행: 마지막 장면까지 갔는지, 가는 중인지
+  const tripEnded = () => !!STOPS[S.stop]?.seq[S.step]?.end;
+  const tripGoing = () => (S.stop > 0 || S.step > 1) && !tripEnded();
+  const guideStep = (i, kicker = "다음에 할 것") => ({ kicker, e: GUIDES[i].e, title: `${i + 1}편 · ${GUIDES[i].title}`, sub: i < BASIC ? "짧은 그림 영상" : "그림 영상 + 퀴즈 한 문제", attrs: `data-act="guide" data-i="${i}"` });
+  const labStep = (x, kicker, sub) => ({ kicker, e: x.e, title: `겪어 보기 · ${x.title}`, sub, attrs: `data-act="labopen" data-i="${x.lab}" data-m="${mode()}"` });
+  // 보다 만 것이 있으면 이어서, 없으면 순서대로: 처음 3편 → 여행 → 투자 학교 → 겪어 보기 → 투자 비밀
+  function nextStep() {
+    const lab = LAB.pending();
+    if (lab) return labStep(lab, "이어서 하기", `${lab.i + 1} / ${lab.n} 화면부터`);
+    if (L.at && gIdx(L.at.id) >= 0) return { ...guideStep(gIdx(L.at.id), "이어서 하기"), sub: "보던 장면부터" };
+    const tripStep = (kicker, sub) => ({ kicker, e: "🚀", title: "2020년 여행", sub, attrs: 'data-act="trip"' });
+    if (tripGoing()) return tripStep("이어서 하기", `${STOPS[S.stop].title}부터`);
+    const unseen = (from, to) => { const i = GUIDES.slice(from, to).findIndex((g) => !L[g.id]); return i < 0 ? -1 : from + i; };
+    let i = unseen(0, BASIC);
+    if (i >= 0) return guideStep(i);
+    if (!L.trip && !tripEnded()) return tripStep("다음에 할 것", "동전 10개 · 가게 5곳 · 진짜 값");
+    i = unseen(BASIC, SCHOOL);
+    if (i >= 0) return guideStep(i);
+    const x = LAB.firstUnseen();
+    if (x) return labStep(x, "다음에 할 것", mode() === "easy" ? "손으로 해 보는 짧은 체험" : "실제 기록으로 겪어 보기");
+    i = unseen(SCHOOL, GUIDES.length);
+    return i >= 0 ? guideStep(i) : null;
+  }
+  const nextButton = (n) => `<button class="big main next" ${n.attrs}><span>${n.e}</span><div><em>${n.kicker}</em>${n.title}<small>${n.sub}</small></div></button>`;
+
+  // ---------- 접어 둔 목록 ----------
+  const openFolds = new Set();
+  const fold = (id, e, title, sub, inner) => `<details class="fold" id="fold-${id}" data-fold="${id}" ${openFolds.has(id) ? "open" : ""}><summary><span>${e}</span><div>${title}<small>${sub}</small></div></summary><div class="inside">${inner}</div></details>`;
+  document.addEventListener("toggle", (e) => { const id = e.target.dataset?.fold; if (id) openFolds[e.target.open ? "add" : "delete"](id); }, true);
+
   const tile = (g, i) => `<button class="tile ${L[g.id] ? "done" : ""}" data-act="guide" data-i="${i}"><span>${g.e}</span><b>${i + 1}편${L[g.id] === "quiz" ? " · 퀴즈 ⭐" : ""}</b>${g.title}${L[g.id] ? "<i>✅</i>" : ""}</button>`;
+  const tiles = (from, to) => `<div class="tiles">${GUIDES.slice(from, to).map((g, i) => tile(g, i + from)).join("")}</div>`;
+  const count = (from, to) => `${GUIDES.slice(from, to).filter((g) => L[g.id]).length} / ${to - from}편`;
+
   function renderIntro() {
     if (view === "words") return renderWords();
     if (view === "lab") return LAB.render();
-    const going = S.stop > 0 || S.step > 1;
+    const m = mode(), grown = m === "full", n = nextStep(), going = tripGoing(), started = S.stop > 0 || S.step > 1;
     const stars = GUIDES.filter((g) => L[g.id] === "quiz").length;
     $("#main").innerHTML = `
-      <div class="hero">${ART.owl("happy")}<h1>꼬마 탐험가</h1><p>부엉이 라우와 타임머신 타고<br>진짜 주식 여행을 떠나요</p></div>
-      <div class="menu">
-        <button class="big main" data-act="all"><span>▶️</span><div>영상 보고 여행 가기<small>처음이라면 여기부터! 약 3분 영상 + 여행</small></div></button>
-        <button class="big go" data-act="trip"><span>🚀</span><div>${going ? "여행 이어 하기" : "바로 2020년 여행 떠나기"}<small>${going ? `${STOPS[Math.min(S.stop, STOPS.length - 1)].title}부터` : "동전 10개 · 가게 5곳 · 진짜 값"}</small></div></button>
-        ${going ? `<button class="big" data-act="restart"><span>🔄</span><div>여행 처음부터<small>동전 10개로 다시 시작</small></div></button>` : ""}
+      <div class="hero">${ART.owl("happy")}<h1>꼬마 탐험가</h1><p>${grown ? "아는 것이 없어도 괜찮아요<br>처음부터 차근차근 살펴봐요" : "부엉이 라우와 타임머신 타고<br>진짜 주식 여행을 떠나요"}</p></div>
+      <div class="modes" role="group" aria-label="설명 버전 고르기">
+        <button data-act="mode" data-m="easy" class="${grown ? "" : "on"}" aria-pressed="${!grown}">🧒 아이 버전</button>
+        <button data-act="mode" data-m="full" class="${grown ? "on" : ""}" aria-pressed="${grown}">🧑 어른 버전</button>
       </div>
-      <h2 class="sec">🔍 겪어 보기 <small>진짜 기록으로 한 걸음씩</small></h2>
-      ${LAB.buttons()}
-      <h2 class="sec">📺 처음 3편 <small>주식 · 값 · 증권 앱</small></h2>
-      <div class="tiles">${GUIDES.slice(0, BASIC).map((g, i) => tile(g, i)).join("")}</div>
-      <h2 class="sec" id="school">🏫 라우의 투자 학교 <small>⭐ 퀴즈 ${stars}/${GUIDES.length}</small></h2>
-      <p class="muted" style="margin:0 4px 10px;font-size:.9rem">이익 · 재무제표 · 차트 · 시가총액 · 금리 · 환율 · 물가 · 투자 습관. 한 편씩 보고 퀴즈를 풀어요.</p>
-      <div class="tiles">${GUIDES.slice(BASIC, SCHOOL).map((g, i) => tile(g, i + BASIC)).join("")}</div>
-      <h2 class="sec">🔐 어른도 잘 모르는 투자 비밀</h2>
-      <p class="muted" style="margin:0 4px 10px;font-size:.9rem">주문 · 수수료 · 반 토막 · 복리 · 매달 사기 · 분할 · 마음의 함정 · 시장 규칙. 엄마·아빠도 같이 봐요!</p>
-      <div class="tiles">${GUIDES.slice(SCHOOL).map((g, i) => tile(g, i + SCHOOL)).join("")}</div>
+      <p class="modehint">${grown ? "겪어 보기를 용어 풀이 · 숫자 · 흔한 오해까지 담아 보여 줘요." : "겪어 보기를 짧은 말과 손으로 해 보기로 보여 줘요."} 영상 · 여행 · 사전은 두 버전이 같아요.</p>
+      <div class="menu">${n ? nextButton(n) : `<div class="card"><h2>🌳 모두 한 번씩 해 봤어요</h2><p>아래에서 다시 보고 싶은 것을 골라요.</p></div>`}</div>
+      <p class="modehint">순서대로 하지 않아도 돼요. 아래에서 골라도 돼요.</p>
+      ${fold("basic", "📺", "처음 3편", count(0, BASIC), tiles(0, BASIC))}
+      ${fold("trip", "🚀", "2020년 여행", going ? `${STOPS[S.stop].title}까지 왔어요` : L.trip || tripEnded() ? "다녀왔어요 ✅" : "동전 10개 · 가게 5곳",
+        `<div class="menu"><button class="big go" data-act="trip"><span>🚀</span><div>${going ? "여행 이어 하기" : tripEnded() ? "여행 결과 다시 보기" : "2020년 여행 떠나기"}</div></button>${started ? `<button class="big" data-act="restart"><span>🔄</span><div>여행 처음부터<small>동전 10개로 다시 시작</small></div></button>` : ""}</div>`)}
+      ${fold("school", "🏫", "라우의 투자 학교", `${count(BASIC, SCHOOL)} · ⭐ 퀴즈 ${stars}/${GUIDES.length}`, `<p class="foldnote">이익 · 재무제표 · 차트 · 시가총액 · 금리 · 환율 · 물가 · 투자 습관. 한 편씩 보고 퀴즈를 풀어요.</p>${tiles(BASIC, SCHOOL)}`)}
+      ${fold("labs", "🔍", `겪어 보기 · ${grown ? "🧑 어른" : "🧒 아이"}`, "진짜 기록으로 한 걸음씩", LAB.buttons(m))}
+      ${fold("secret", "🔐", "어른도 잘 모르는 투자 비밀", count(SCHOOL, GUIDES.length), `<p class="foldnote">주문 · 수수료 · 반 토막 · 복리 · 매달 사기 · 분할 · 마음의 함정 · 시장 규칙. 아이와 어른이 같이 봐요!</p>${tiles(SCHOOL, GUIDES.length)}`)}
       <div class="menu"><button class="big" data-act="words"><span>📖</span><div>투자 말 사전<small>${WORDS.length}개 낱말 · 누르면 라우가 읽어 줘요</small></div></button></div>
       <p class="note">${SP.supported ? "🔊 소리를 켜면 라우가 읽어 줘요." : "이 브라우저는 소리 읽기를 지원하지 않아요. 엄마·아빠가 읽어 주세요."}<br>교육용 시뮬레이션이에요. 투자 권유가 아니에요.</p>`;
   }
@@ -500,7 +538,7 @@
     if (st.news) return showNews(st.news, next);
     if (st.predict) return showPredict(st.predict, next);
     if (st.trade) return showTrade(st, next);
-    if (st.end) { S.phase = "end"; save(); cancelTalk(); bubble(""); return render(); }
+    if (st.end) { S.phase = "end"; save(); L.trip = "seen"; saveL(); cancelTalk(); bubble(""); return render(); }
   }
 
   function sayLines(st, done) {
@@ -664,17 +702,18 @@
         <button class="big" data-act="words" style="margin-top:8px"><span>📖</span><div>투자 말 사전<small>${WORDS.length}개 낱말</small></div></button>
         <a class="big main" href="index.html"><span>📱</span><div>다음 단계: 진짜 증권 앱처럼 해 보기<small>스토리 모드 · 엄마·아빠랑 같이 (형·누나용)</small></div></a>
         <p class="muted" style="font-size:.85rem;margin:10px 0 0">실제 주식 계좌는 어린이 혼자 만들 수 없고, 부모님이 함께 만들어야 해요. 실제 투자는 꼭 어른과 함께 정해요.</p></div>
-      <div class="menu" style="margin-top:14px"><button class="big go" data-act="restart"><span>🔄</span><div>다시 여행하기<small>이번엔 다르게 골라 볼까?</small></div></button></div>
+      <div class="menu" style="margin-top:14px"><button class="big main" data-act="home"><span>🏠</span><div>처음 화면에서 다음에 할 것 보기</div></button><button class="big go" data-act="restart"><span>🔄</span><div>다시 여행하기<small>이번엔 다르게 골라 볼까?</small></div></button></div>
       <p class="note">교육용 시뮬레이션이에요. 투자 권유가 아니에요. 지나간 값이 앞으로의 값을 알려 주지는 않아요.</p>`;
     bubble("");
     SP.say("여행 끝! 이번 여행에서 내가 생각한 것들을 다시 살펴봐요.");
   }
 
   // ---------- 그림 영상 극장 ----------
-  let TH = null; // { gi, si, chain, paused }
-  function openGuide(gi, chain = false) {
+  let TH = null; // { gi, si, paused }
+  function openGuide(gi) {
     cancelTalk();
-    TH = { gi, si: 0, chain, paused: false };
+    const g = GUIDES[gi];
+    TH = { gi, si: L.at?.id === g.id && L.at.si < g.scenes.length ? L.at.si : 0, paused: false };
     $("#theater").hidden = false;
     playScene();
   }
@@ -682,6 +721,8 @@
   function playScene() {
     const g = GUIDES[TH.gi], th = $("#theater");
     if (TH.si >= g.scenes.length) return guideEnd();
+    if (TH.si > 0) { L.at = { id: g.id, si: TH.si }; saveL(); }
+    else if (L.at?.id === g.id) { delete L.at; saveL(); }
     const [key, line] = g.scenes[TH.si];
     const art = typeof key === "function" ? key() : SCENES[key]();
     const img = IMGS.has(`${g.id}-${TH.si + 1}`) ? `<img src="img/kid/${g.id}-${TH.si + 1}.webp" alt="" style="--ox:${[30, 70, 50][TH.si % 3]}%;--oy:${[40, 60, 50][TH.si % 3]}%" onload="this.parentNode.classList.add('has-img')">` : "";
@@ -695,21 +736,19 @@
     speakThen(line, () => { if (TH && !TH.paused) { TH.si++; playScene(); } }, { wait: 1100 });
   }
   function guideEnd() {
-    const g = TH.gi, G = GUIDES[g], last = g + 1 >= GUIDES.length;
-    if (!L[G.id]) { L[G.id] = "seen"; saveL(); }
-    if (TH.chain) {
-      if (g + 1 < BASIC) { TH.gi++; TH.si = 0; return playScene(); }
-      closeGuide(); return startTrip();
-    }
+    const g = TH.gi, G = GUIDES[g];
+    if (!L[G.id]) L[G.id] = "seen";
+    if (L.at?.id === G.id) delete L.at;
+    saveL();
     if (G.quiz && !TH.quiz) return showQuiz();
+    const n = nextStep();
     $("#theater").innerHTML = `<div class="th-top"><b>📺 ${g + 1}편 끝!</b><button class="iconbtn" data-act="thclose" aria-label="닫기">✕</button></div>
       <div style="display:grid;place-items:center"><div class="th-end">
         <div style="width:120px;margin:0 auto">${ART.owl("proud")}</div>
-        ${last ? "" : `<button class="big main" data-act="guide" data-i="${g + 1}"><span>${GUIDES[g + 1].e}</span><div>${g + 2}편 · ${GUIDES[g + 1].title}</div></button>`}
-        <button class="big go" data-act="trip"><span>🚀</span><div>2020년 여행 떠나기</div></button>
+        ${n ? nextButton(n) : ""}
         <button class="big" data-act="guide" data-i="${g}"><span>🔁</span><div>다시 보기</div></button>
-        <button class="big" data-act="thclose"><span>🏫</span><div>투자 학교로 돌아가기</div></button></div></div>`;
-    SP.say(last ? "투자 학교를 다 봤어요! 정말 멋져요." : "잘 봤어요! 다음 편도 볼까요?");
+        <button class="big" data-act="thclose"><span>🏠</span><div>그만 보고 돌아가기</div></button></div></div>`;
+    SP.say(n ? "잘 봤어요! 다음 것도 해 볼까요? 쉬었다 해도 돼요." : "잘 봤어요!");
   }
 
   // 영상 끝 퀴즈 한 문제 (보기 순서는 매번 섞어요)
@@ -756,8 +795,8 @@
     if (!b || b.disabled) return;
     const a = b.dataset.act;
     if (a === "sound") { SP.setOn(!SP.on); return renderTop(); }
-    if (a.startsWith("lab")) return LAB.act(a, b.dataset);
-    if (a === "all") return openGuide(0, true);
+    if (a.startsWith("lab")) { if (TH) closeGuide(); return LAB.act(a, b.dataset); }
+    if (a === "mode") { L.mode = b.dataset.m; saveL(); render(); return $(`.modes [data-m="${mode()}"]`)?.focus({ preventScroll: true }); }
     if (a === "guide") return openGuide(+b.dataset.i);
     if (a === "trip") return startTrip();
     if (a === "restart") { cancelTalk(); S = fresh(); S.phase = "trip"; save(); return run(); }
@@ -773,8 +812,8 @@
     if (a === "quiz") return answerQuiz(+b.dataset.i);
     if (a === "quizok") return guideEnd();
     if (a === "words") { cancelTalk(); view = "words"; S.phase = "intro"; save(); render(); return scrollTo(0, 0); }
-    if (a === "home") { cancelTalk(); view = "home"; render(); return scrollTo(0, 0); }
-    if (a === "school") { cancelTalk(); view = "home"; S.phase = "intro"; save(); render(); return $("#school")?.scrollIntoView({ behavior: "smooth" }); }
+    if (a === "home") return goHome();
+    if (a === "school") { openFolds.add("school"); goHome(); return $("#fold-school")?.scrollIntoView({ behavior: "smooth" }); }
     if (a === "word") { const [w, , m] = WORDS[+b.dataset.i]; return SP.say(`${w}. ${m}`); }
     if (a === "what") { const s = shop(b.dataset.sym); return SP.say(`${s.kid}. 진짜 이름은 ${s.real}. ${s.what}`); }
   });

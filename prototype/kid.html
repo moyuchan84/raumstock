@@ -292,6 +292,62 @@ button:disabled { opacity: .4; cursor: default; }
 .lnav { display: flex; justify-content: space-between; align-items: center; gap: 8px; margin-top: 16px; }
 .lhome { display: block; margin: 12px auto 0; }
 
+/* 첫 화면: 버전 고르기 · 다음에 할 것 · 접는 목록 */
+.modes { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-top: 14px; }
+.modes button { padding: 10px; border-radius: 99px; background: var(--paper); border: 3px solid var(--ink); }
+.modes button.on { background: var(--ink); color: #fff; }
+.modehint { margin: 8px 4px 0; text-align: center; font-size: .82rem; color: var(--muted); }
+.big.next { padding: 20px 18px; }
+.big.next em { display: block; font-style: normal; font-size: .85rem; }
+.fold { margin-top: 12px; }
+.fold summary { display: flex; align-items: center; gap: 12px; padding: 12px 16px; border-radius: 20px; background: var(--paper); border: 3px solid var(--ink); box-shadow: 4px 4px 0 var(--ink); cursor: pointer; list-style: none; }
+.fold summary::-webkit-details-marker { display: none; }
+.fold summary > span { font-size: 1.7rem; }
+.fold summary div { flex: 1; }
+.fold summary small { display: block; color: var(--muted); font-size: .82rem; }
+.fold summary::after { content: "▼"; font-size: .8rem; }
+.fold[open] summary::after { content: "▲"; }
+.fold summary:focus-visible { outline: 3px solid var(--ink); outline-offset: 2px; }
+.fold .inside { padding-top: 12px; }
+.fold .inside .menu { margin-top: 0; }
+.foldnote { margin: 0 4px 10px; font-size: .9rem; color: var(--muted); }
+
+/* 겪어 보기: 손으로 해 보기 (아이 버전) · 자주 헷갈리는 것 (어른 버전) */
+.lead.easy { font-size: 1.35rem; }
+.lead.full { font-size: 1.1rem; }
+.pic { text-align: center; }
+.pic .lgraph .ax { text-align: left; }
+.center { text-align: center; }
+.bigpic { font-size: 2rem; margin: 10px 0; }
+.two { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin: 6px 0; }
+.two > div { display: grid; justify-items: center; align-content: start; gap: 4px; padding: 12px 8px; border-radius: 16px; background: var(--paper-2); }
+.two > div > span { font-size: 2.6rem; }
+.two b { font-weight: normal; }
+.two small { color: var(--muted); font-size: .9rem; }
+.tap { padding: 12px 14px; border-radius: 16px; background: var(--paper-2); border: 3px solid var(--ink); box-shadow: 3px 3px 0 var(--ink); font-size: 1.05rem; }
+.tap.wide { display: block; width: 100%; margin-top: 12px; background: var(--sun); font-size: 1.2rem; }
+.tap.on { background: var(--sun); }
+.tap:active { transform: translate(2px, 2px); box-shadow: 1px 1px 0 var(--ink); }
+.chips { display: flex; flex-wrap: wrap; justify-content: center; gap: 8px; margin-top: 10px; }
+.coinnum { font-size: 1.4rem; }
+.coinnum b { font-size: 2.6rem; font-weight: normal; }
+.lemons { display: flex; flex-wrap: wrap; justify-content: center; gap: 2px; }
+.lemons span { font-size: 1.25rem; }
+.lemons span:only-child { font-size: 2rem; }
+.two .closed { font-size: 2.6rem; }
+.stalls { display: flex; justify-content: center; gap: 8px; margin: 8px 0; }
+.stalls > div { flex: 1; max-width: 90px; display: grid; justify-items: center; align-content: start; gap: 4px; padding: 8px 4px; border-radius: 16px; background: var(--paper-2); min-height: 110px; }
+.stalls span { font-size: 2.2rem; }
+.stalls i { font-style: normal; line-height: 1.3; overflow-wrap: anywhere; }
+.goal { margin-top: 12px; padding: 10px 12px; border-radius: 14px; background: #fff7d6; border: 3px solid var(--ink); }
+.checks { display: grid; gap: 8px; text-align: left; }
+.checks div { padding: 12px; border-radius: 14px; background: var(--paper-2); }
+.checks b { font-weight: normal; text-decoration: underline; text-decoration-color: var(--sun); text-decoration-thickness: 5px; }
+.myth { margin-top: 10px; padding: 8px 12px; border-radius: 14px; background: var(--paper-2); }
+.myth b { font-weight: normal; }
+.myth p { margin: 4px 0 0; font-size: .95rem; color: var(--muted); }
+.lreset { display: block; margin: 10px auto 0; font-size: .85rem; color: var(--muted); text-decoration: underline; }
+
 /* 좁은 화면: 위 막대의 소리 버튼이 잘리지 않게 */
 @media (max-width: 420px) { #top { gap: 4px; } #top .chip { padding: 4px 7px; font-size: .9rem; } #top .iconbtn { width: 38px; height: 38px; } }
 
@@ -312,6 +368,9 @@ button:disabled { opacity: .4; cursor: default; }
 <script src="art.js"></script>
 <script src="fin.js"></script>
 <script src="stages-real.js"></script>
+<script src="long-real.js"></script>
+<script src="lab-easy.js"></script>
+<script src="lab-full.js"></script>
 <script src="kid-lab.js"></script>
 <script src="img/kid/list.js" onerror="window.RAUM_KID_IMGS=[]"></script>
 <script src="kid.js"></script>
