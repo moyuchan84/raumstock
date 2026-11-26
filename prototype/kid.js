@@ -22,7 +22,7 @@
 
   // ---------- 상태 ----------
   const KEY = "raum-kid-v1";
-  const fresh = () => ({ phase: "intro", stop: 0, step: 0, di: START, cash: 10, sh: {}, preds: {}, flags: {}, sh0: null, cash0: 10, mark: START, before: 0 });
+  const fresh = () => ({ phase: "intro", stop: 0, step: 0, di: START, cash: 10, sh: {}, preds: {}, flags: {}, sh0: null, cash0: 10, mark: START, why: null, log: [], tradeFrom: null });
   let S = (() => { try { return { ...fresh(), ...JSON.parse(localStorage.getItem(KEY)) }; } catch { return fresh(); } })();
   const save = () => localStorage.setItem(KEY, JSON.stringify(S));
 
@@ -319,6 +319,7 @@
     ["복리", "⛄", "늘어난 돈이 또 자라는 것", "g15"], ["적립식 투자", "📅", "매달 조금씩 사기", "g16"],
     ["액면분할", "🔪", "조각을 더 잘게 자르기 (전체 값은 그대로)", "g17"], ["상장", "🔔", "가게가 시장에 조각을 처음 내놓는 것", "g17"],
     ["평가손익", "📊", "팔기 전, 지금 값으로 계산한 이익·손해", "g18"], ["실현손익", "✅", "진짜 팔아서 생긴 이익·손해", "g18"],
+    ["밸류에이션", "✖️", "가게 실력에 비해 값을 얼마로 쳐주는지", "g7"], ["인덱스", "🧺", "정한 방법으로 여러 회사를 모아 잰 것 (예: S&P 500)", "g19"],
     ["상한가 · 하한가", "🔺", "하루에 오르내릴 수 있는 끝 (우리나라 ±30%)", "g19"], ["지수", "📊", "시장 전체의 평균 점수 (코스피, S&P 500)", "g19"],
   ];
 
@@ -353,7 +354,7 @@
         () => `내 동전 10개는 지금 ${c1(total())}개가 됐어요.`,
       ], mood: "scared" },
       { predict: { key: "fear", q: "무서울 때, 너라면 어떻게 할래?", opts: ["🙈 다 팔고 저금통에 넣을래", "🧘 그냥 기다릴래", "🛒 싸졌으니 더 살래"] } },
-      { trade: "마음대로 사고팔아 봐요. 그대로 둬도 괜찮아요.", parent: "값이 떨어졌을 때 기분이 어땠어? 기다리면 어떻게 될까?", brave: true },
+      { trade: "바꾸고 싶으면 사고팔고, 아니면 그대로 둬요. 둘 다 괜찮아요.", parent: "값이 떨어졌을 때 기분이 어땠어? 가게가 하는 일도 달라졌을까?" },
     ] },
     { em: "🏠", title: "6월 · 집에 있는 여름", seq: [
       { travel: "2020-06-08", mark: true },
@@ -370,12 +371,12 @@
       { travel: "2020-11-06", mark: true },
       { say: ["가을이 됐어요. 아직도 병 때문에 여행을 마음껏 못 가요.", () => `화상 수업 가게는 1월보다 ${moved(ratio("ZM", START, S.di))}. 배 여행 가게는 ${moved(ratio("CCL", START, S.di))}.`], mood: "ok" },
       { news: { e: "💉", t: "병을 막는 백신이 거의 다 만들어졌어요!", b: "과학자들이 만든 백신이 병을 아주 잘 막는대요. 이제 곧 여행도 갈 수 있을지 몰라요." } },
-      { predict: { key: "vaccine", q: "이 뉴스에 가장 기뻐할 가게는 어디일까?", opts: ["🚢✈️ 여행 가게들", "💻 화상 수업 가게"] } },
-      { travel: "2020-11-09", mark: true, slow: true },
+      { predict: { key: "vaccine", q: "이 뉴스는 어느 가게의 장사를 바꿀 것 같아?", opts: ["🚢✈️ 여행 가게들", "💻 화상 수업 가게", "🔀 둘 다", "🤷 아직 모르겠어"] } },
+      { travel: "2020-11-09", mark: true },
       { say: [
-        () => `딱 하루 만에! 배 여행 가게는 ${moved(sinceMark("CCL"))}. 비행기 가게도 ${moved(sinceMark("AAL"))}.`,
-        () => `화상 수업 가게는 ${moved(sinceMark("ZM"))}. 이제 밖에 나갈 수 있으니까요.`,
-        () => (S.preds.vaccine === 0 ? "예언 성공! 같은 뉴스인데 어떤 가게는 웃고, 어떤 가게는 울었어요." : "같은 뉴스인데 어떤 가게는 웃고, 어떤 가게는 울었어요. 신기하죠?"),
+        () => `다음 거래하는 날, 배 여행 가게는 ${moved(sinceMark("CCL"))}. 비행기 가게는 ${moved(sinceMark("AAL"))}. 화상 수업 가게는 ${moved(sinceMark("ZM"))}.`,
+        "같은 뉴스인데 가게마다 값이 다르게 움직였어요. 사람들이 앞으로의 장사를 다르게 생각한 것으로 볼 수 있어요.",
+        "이렇게 크게 움직이는 날은 미리 알기 어려워요. 하루 움직임만 보고는 좋은 가게인지도 알 수 없어요.",
       ], mood: "happy", from: "2020-11-06" },
       { trade: "마지막으로 가게를 바꿀 수 있어요!", parent: "백신 뉴스가 왜 화상 수업 가게에는 슬픈 소식이었을까?" },
     ] },
@@ -385,6 +386,15 @@
       { end: true },
     ] },
   ];
+
+  // ---------- 겪어 보기 체험 (kid-lab.js) ----------
+  const LAB = window.RAUM_KID_LAB({
+    $, c1,
+    say: (text) => { cancelTalk(); SP.say(text); },
+    done: (id) => { L[id] = "seen"; saveL(); },
+    seen: (id) => !!L[id],
+    show: () => { cancelTalk(); view = "lab"; S.phase = "intro"; save(); render(); scrollTo(0, 0); },
+  });
 
   // ---------- 그리기 ----------
   function renderTop() {
@@ -431,6 +441,7 @@
   const tile = (g, i) => `<button class="tile ${L[g.id] ? "done" : ""}" data-act="guide" data-i="${i}"><span>${g.e}</span><b>${i + 1}편${L[g.id] === "quiz" ? " · 퀴즈 ⭐" : ""}</b>${g.title}${L[g.id] ? "<i>✅</i>" : ""}</button>`;
   function renderIntro() {
     if (view === "words") return renderWords();
+    if (view === "lab") return LAB.render();
     const going = S.stop > 0 || S.step > 1;
     const stars = GUIDES.filter((g) => L[g.id] === "quiz").length;
     $("#main").innerHTML = `
@@ -440,6 +451,8 @@
         <button class="big go" data-act="trip"><span>🚀</span><div>${going ? "여행 이어 하기" : "바로 2020년 여행 떠나기"}<small>${going ? `${STOPS[Math.min(S.stop, STOPS.length - 1)].title}부터` : "동전 10개 · 가게 5곳 · 진짜 값"}</small></div></button>
         ${going ? `<button class="big" data-act="restart"><span>🔄</span><div>여행 처음부터<small>동전 10개로 다시 시작</small></div></button>` : ""}
       </div>
+      <h2 class="sec">🔍 겪어 보기 <small>진짜 기록으로 한 걸음씩</small></h2>
+      ${LAB.buttons()}
       <h2 class="sec">📺 처음 3편 <small>주식 · 값 · 증권 앱</small></h2>
       <div class="tiles">${GUIDES.slice(0, BASIC).map((g, i) => tile(g, i)).join("")}</div>
       <h2 class="sec" id="school">🏫 라우의 투자 학교 <small>⭐ 퀴즈 ${stars}/${GUIDES.length}</small></h2>
@@ -509,12 +522,12 @@
     if (st.mark) S.mark = from;
     cancelTalk();
     if (to <= from || reduce) { S.di = Math.max(to, S.di); render(); return done(); }
-    const days = to - from, dur = st.slow ? 1800 : Math.min(4200, 900 + days * 28);
+    const days = to - from, dur = Math.min(4200, 900 + days * 28);
     canTrade = false;
     const fx = document.createElement("div"); fx.className = "travel"; fx.innerHTML = "<span>🕰️</span>";
     document.body.append(fx);
     bubble(`🕰️ 슝~ 시간 여행 중!<br><b>${dateKo(to)}</b>로 가요`, "happy", false);
-    SP.say(st.slow ? "하루가 지나면…" : "슝, 시간 여행!");
+    SP.say("슝, 시간 여행!");
     ding(true);
     const t0 = performance.now();
     const tick = (t) => {
@@ -545,25 +558,53 @@
   }
   let predDone = null;
 
+  // 이유는 맞고 틀림이 없어요. 생각하고, 나중에 다시 보는 것이 목표예요.
+  const FIRST_WHY = ["🏪 무엇을 파는지 알아서", "💰 앞으로 돈을 잘 벌 것 같아서", "🧺 여러 가게에 나눠 담으려고", "📈 값이 오를 것 같아서"];
+  const CHANGE_WHY = ["🏪 가게의 장사가 달라진 것 같아서", "📈 값이 올라서", "📉 값이 내려서", "🧺 나눠 담으려고"];
+  const CHECK = ["👍 아직 맞는 것 같아", "🤔 달라진 것 같아", "🤷 잘 모르겠어"];
+  const changed = (from) => SHOPS.some((s) => Math.abs((S.sh[s.sym] || 0) - (from[s.sym] || 0)) * px(s.sym) * KRW / COIN > 0.01);
+
+  function ask(q, opts, done) {
+    canTrade = false;
+    tradeRedraw = null;
+    renderTrip();
+    bubble(`<b>${q}</b><div class="opts">${opts.map((o, i) => `<button data-act="pred" data-i="${i}">${o}</button>`).join("")}</div>`, "ok", false);
+    speakThen(`${q} ${opts.join(". ")}`, null);
+    predDone = (i) => { cancelTalk(); predDone = null; done(i); };
+  }
+
   function showTrade(st, done) {
     canTrade = true;
-    if (st.brave) S.before = invested();
+    S.tradeFrom ||= { ...S.sh }; // 새로고침해도 이 단계에서 바꿨는지 알 수 있게 저장
+    save();
     renderTrip();
     const draw = () => {
       const ok = !st.need || invested() >= st.need - 0.001;
-      bubble(`${st.trade}${st.parent ? `<div class="parent">👨‍👩‍👧 엄마·아빠랑 이야기해요<br>"${st.parent}"</div>` : ""}<div class="row"><button class="pill" data-act="tradeok" ${ok ? "" : "disabled"}>${ok ? "다 했어요! 다음으로 ▶" : "먼저 '사기'를 한 번 눌러요"}</button></div>`, "ok", false);
+      const label = st.first ? (ok ? "다 골랐어요 ▶" : "먼저 '사기'를 한 번 눌러요") : changed(S.tradeFrom) ? "다 바꿨어요 ▶" : "🧘 그대로 두고 다음으로 ▶";
+      bubble(`${st.trade}${st.parent ? `<div class="parent">👨‍👩‍👧 엄마·아빠랑 이야기해요<br>"${st.parent}"</div>` : ""}<div class="row"><button class="pill" data-act="tradeok" ${ok ? "" : "disabled"}>${label}</button></div>`, "ok", false);
     };
     draw();
     tradeRedraw = draw;
     speakThen(st.trade + (st.parent ? ` 엄마 아빠랑 이야기해요. ${st.parent}` : ""), null);
     tradeDone = () => {
       cancelTalk();
-      canTrade = false;
-      if (st.first) { S.sh0 = { ...S.sh }; S.cash0 = S.cash; }
-      const held = SHOPS.filter((s) => val(s.sym) > 0.05).length;
-      if (held >= 3) S.flags.spread = true;
-      if (st.brave && invested() >= S.before - 0.05) S.flags.brave = true;
-      save(); done();
+      tradeDone = null;
+      const didChange = changed(S.tradeFrom);
+      const finish = () => {
+        if (st.first) { S.sh0 = { ...S.sh }; S.cash0 = S.cash; }
+        if (SHOPS.filter((s) => val(s.sym) > 0.05).length >= 3) S.flags.spread = true;
+        S.tradeFrom = null;
+        save(); done();
+      };
+      if (st.first) return ask("이 가게를 고른 가장 큰 이유는 뭐야?", FIRST_WHY, (i) => { S.why = i; finish(); });
+      const entry = { stop: S.stop, change: null, check: null };
+      const recheck = () => {
+        const end = () => { S.log = [...S.log.filter((x) => x.stop !== entry.stop), entry]; finish(); };
+        if (S.why === null) return end();
+        ask(`처음 이유는 "${FIRST_WHY[S.why]}"였어. 지금도 맞을까?`, CHECK, (i) => { entry.check = i; end(); });
+      };
+      if (didChange) return ask("왜 바꿨어?", CHANGE_WHY, (i) => { entry.change = i; recheck(); });
+      recheck();
     };
   }
   let tradeDone = null, tradeRedraw = null;
@@ -592,23 +633,29 @@
     const end = S.di, tot = total(end);
     const keep = S.sh0 ? S.cash0 + SHOPS.reduce((a, s) => a + (S.sh0[s.sym] || 0) * px(s.sym, end) * KRW / COIN, 0) : 10;
     const year = SHOPS.map((s) => ({ s, r: ratio(s.sym, START, end) })).sort((a, b) => b.r - a.r);
+    // 스티커는 맞혔는지, 벌었는지가 아니라 '어떻게 했는지'에 줘요
     const stickers = [
-      ["🌱", "첫 투자", !!S.sh0],
+      ["📝", "이유 생각하기", S.why !== null],
+      ["🔁", "이유 다시 보기", S.log.some((x) => x.check !== null)],
       ["🧺", "나눠 담기", !!S.flags.spread],
-      ["🦁", "용감한 마음", !!S.flags.brave],
-      ["🔮", "백신 예언가", S.preds.vaccine === 0],
-      ["🏠", "마음 읽기", S.preds.virus === 0],
-      ["🏁", "끝까지 완주", true],
+      ["🏁", "끝까지 살펴보기", true],
+    ];
+    const thoughts = [
+      ...(S.why === null ? [] : [["1월에 고른 이유", FIRST_WHY[S.why]]]),
+      ...S.log.map((x) => [STOPS[x.stop].title, [x.change === null ? "🧘 그대로 뒀어" : `🔄 바꾼 이유: ${CHANGE_WHY[x.change]}`, x.check === null ? "" : `처음 이유는? ${CHECK[x.check]}`].filter(Boolean).join("<br>")]),
     ];
     $("#main").innerHTML = `
       <div class="banner"><span class="em">🎆</span><div><b>2020년 여행 끝!</b><small>진짜 2020년 값으로 계산했어요</small></div></div>
-      <div class="card"><h2>내 동전</h2><p class="total">🪙 10 → <b class="${tot >= 10 ? "up" : "down"}">${c1(tot)}</b></p>
-        <div class="cmp"><div><span>🧒 내가 한 대로</span><b>${c1(tot)}개</b></div><div><span>📌 1월에 고른 그대로 뒀다면</span><b>${c1(keep)}개</b></div><div><span>🐷 저금통에만 뒀다면</span><b>10개</b></div></div></div>
-      <div class="card"><h2>가게들의 1년</h2><div class="cmp">${year.map(({ s, r }) => `<div><span>${s.e} ${s.kid}</span><b class="${r >= 1 ? "up" : "down"}">${moved(r)}</b></div>`).join("")}</div></div>
+      ${thoughts.length ? `<div class="card"><h2>📝 내가 생각한 것들</h2><div class="thoughts">${thoughts.map(([k, v]) => `<div><small>${k}</small>${v}</div>`).join("")}</div></div>` : ""}
       <div class="card"><h2>받은 스티커</h2><div class="stickers">${stickers.map(([e, n, ok], i) => `<div class="sticker ${ok ? "" : "no"}" style="animation-delay:${i * 0.12}s"><span>${e}</span>${n}</div>`).join("")}</div></div>
+      <div class="card"><h2>내 동전 10개는?</h2>
+        <div class="cmp"><div><span>🧒 내가 한 대로</span><b>${c1(tot)}개</b></div><div><span>📌 1월에 고른 그대로 뒀다면</span><b>${c1(keep)}개</b></div><div><span>🐷 저금통에만 뒀다면</span><b>10개</b></div></div>
+        <p class="luck">🍀 동전이 많다고 꼭 잘 고른 건 아니에요. <b>잘 생각해도 내릴 수 있고, 그냥 골라도 오를 수 있어요.</b> 결과에는 운도 섞여 있어요.</p></div>
+      <div class="card"><h2>가게들의 1년</h2><div class="cmp">${year.map(({ s, r }) => `<div><span>${s.e} ${s.kid}</span><b class="${r >= 1 ? "up" : "down"}">${moved(r)}</b></div>`).join("")}</div></div>
+      <div class="card"><h2>🔍 다음은 직접 비교해 보기</h2>${LAB.buttons()}</div>
       <div class="card"><h2>👨‍👩‍👧 오늘 저녁 이야기</h2><ul>
-        <li>어떤 뉴스가 가게 값을 제일 크게 바꿨을까?</li>
-        <li>3월에 무서웠을 때 팔았다면 어떻게 됐을까?</li>
+        <li>내가 고른 이유 중에 가게를 보고 정한 것은 뭐였을까?</li>
+        <li>값이 내렸을 때, 가게가 하는 일도 달라졌을까?</li>
         <li>우리 집에서 매일 쓰는 물건은 어느 회사가 만들었을까? 그 회사도 주식이 있을까?</li></ul></div>
       <div class="card"><h2>🎓 오늘 배운 진짜 투자 말</h2><ul>
         <li><b>주식</b> = 회사의 작은 조각</li><li><b>사기·팔기</b> = 매수·매도 (증권 앱 버튼 이름)</li>
@@ -620,7 +667,7 @@
       <div class="menu" style="margin-top:14px"><button class="big go" data-act="restart"><span>🔄</span><div>다시 여행하기<small>이번엔 다르게 골라 볼까?</small></div></button></div>
       <p class="note">교육용 시뮬레이션이에요. 투자 권유가 아니에요. 지나간 값이 앞으로의 값을 알려 주지는 않아요.</p>`;
     bubble("");
-    SP.say(`여행 끝! 내 동전 10개는 ${c1(tot)}개가 됐어요. 스티커를 확인해 봐요!`);
+    SP.say("여행 끝! 이번 여행에서 내가 생각한 것들을 다시 살펴봐요.");
   }
 
   // ---------- 그림 영상 극장 ----------
@@ -709,6 +756,7 @@
     if (!b || b.disabled) return;
     const a = b.dataset.act;
     if (a === "sound") { SP.setOn(!SP.on); return renderTop(); }
+    if (a.startsWith("lab")) return LAB.act(a, b.dataset);
     if (a === "all") return openGuide(0, true);
     if (a === "guide") return openGuide(+b.dataset.i);
     if (a === "trip") return startTrip();
