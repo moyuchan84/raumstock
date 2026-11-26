@@ -263,6 +263,38 @@ button:disabled { opacity: .4; cursor: default; }
 .card ul { margin: 0; padding-left: 20px; } .card li { margin: 4px 0; }
 .card a.big { text-decoration: none; color: inherit; margin-top: 8px; }
 
+/* 결과: 생각 기록 · 겪어 보기 체험 */
+.thoughts { display: grid; gap: 8px; }
+.thoughts > div { padding: 8px 12px; border-radius: 14px; background: var(--paper-2); }
+.thoughts small { display: block; color: var(--muted); font-size: .8rem; }
+.luck { margin: 10px 0 0; padding: 8px 12px; border-radius: 14px; background: #fff7d6; font-size: .95rem; }
+.lead { margin: 0 4px; font-size: 1.2rem; }
+.card p { margin: 6px 0; } .card .small { font-size: .82rem; color: var(--muted); }
+.card .opts button.on { background: var(--sun); }
+.card .reply { margin-top: 10px; padding: 10px 12px; border-radius: 14px; background: #e8fff5; border: 2px dashed var(--mint); }
+.cmp div { gap: 10px; align-items: center; }
+.cmp div > b { text-align: right; font-weight: normal; }
+.cmp div.mine { background: #fff7d6; outline: 2px solid var(--ink); }
+.cmp em { font-style: normal; font-size: .75rem; padding: 1px 6px; border-radius: 99px; background: var(--sun); }
+.tbl { overflow-x: auto; }
+.tbl table { width: 100%; border-collapse: collapse; font-size: .88rem; }
+.tbl th, .tbl td { padding: 7px 4px; border-bottom: 2px dashed #c8d3e6; text-align: right; font-weight: normal; }
+.tbl th { color: var(--muted); font-size: .78rem; word-break: keep-all; }
+.tbl th:first-child, .tbl td:first-child { text-align: left; }
+.tbl td:not(:first-child) { white-space: nowrap; }
+.lgraph svg { width: 100%; height: 150px; display: block; background: var(--paper-2); border-radius: 12px; }
+.lgraph .ax { display: flex; justify-content: space-between; font-size: .8rem; color: var(--muted); }
+.legend { font-size: .85rem; }
+.pbar { display: grid; grid-template-columns: 1fr auto; gap: 2px 8px; margin: 8px 0; align-items: center; }
+.pbar span { grid-column: 1 / -1; font-size: .85rem; color: var(--muted); }
+.pbar i { display: block; height: 22px; border-radius: 8px; background: var(--sun); border: 2px solid var(--ink); }
+.pbar b { font-weight: normal; white-space: nowrap; }
+.lnav { display: flex; justify-content: space-between; align-items: center; gap: 8px; margin-top: 16px; }
+.lhome { display: block; margin: 12px auto 0; }
+
+/* 좁은 화면: 위 막대의 소리 버튼이 잘리지 않게 */
+@media (max-width: 420px) { #top { gap: 4px; } #top .chip { padding: 4px 7px; font-size: .9rem; } #top .iconbtn { width: 38px; height: 38px; } }
+
 @media (prefers-reduced-motion: reduce) { *, *::before, *::after { animation-duration: .01ms !important; animation-iteration-count: 1 !important; } }
 </style>
 </head>
@@ -278,6 +310,9 @@ button:disabled { opacity: .4; cursor: default; }
 <script src="speak.js"></script>
 <script src="daily.js"></script>
 <script src="art.js"></script>
+<script src="fin.js"></script>
+<script src="stages-real.js"></script>
+<script src="kid-lab.js"></script>
 <script src="img/kid/list.js" onerror="window.RAUM_KID_IMGS=[]"></script>
 <script src="kid.js"></script>
 </body>
