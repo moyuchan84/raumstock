@@ -7,7 +7,9 @@
 - **API로:** `node scripts/gen-kid-images.mjs [g1-2 ...] [--force]` → 만들고, webp로 바꾸고, `list.js`까지 다시 씀. 단 2026-11 현재 `.env`의 무료 등급 키는 이미지 모델 할당량이 0이라 결제 등급 키가 필요해요.
 - **Gemini 웹에서 받은 PNG로:** `.cache/kid-art/<이름>.png`로 저장한 뒤 `node scripts/gen-kid-images.mjs none` → 변환과 목록만 다시 함.
 
-투자 학교 4~11편(g4~g11)은 아직 Gemini 그림이 없어 코드로 그린 장면(계산표 · 재무상태표 막대 · 진짜 2020년 차트 · 촛불 막대 · 시소 · 환전 카드)으로 보여 줘요. 같은 이름 규칙(`g4-1.webp` …)으로 그림을 넣고 `list.js`에 추가하면 그 장면만 그림으로 바뀌어요. 단 숫자가 나오는 장면(계산표 · 차트)은 코드 그림이 더 정확해요.
+투자 학교 · 투자 비밀 4~19편(g4~g19)은 **개념 장면 45장만 Gemini 그림**이에요 (2026-11-26, 같은 대화에서 2×2 그림판 12장으로 만들어 잘라 씀). 숫자가 나오는 장면(계산표 · 재무상태표 막대 · 진짜 2020년 차트 · 촛불 막대 · 호가창 · 막대그래프 · 시소 · 환전 카드)은 정확하도록 일부러 코드 그림으로 둬요. 그림이 있는 장면도 장면 이름표(`.s-sign`)는 그림 위에 보여 줘요.
+
+**2×2 그림판으로 만들기 (Gemini 웹, 한 번에 4장):** "one 4:3 image, 2x2 grid of four equal panels with thick plain white gutters … ABSOLUTELY NO text" 처럼 칸마다 장면을 적어 요청 → 받은 PNG를 `node scripts/split-kid-grid.mjs <받은.png> <왼위 id> <오위 id> <왼아래 id> <오아래 id>` (안 쓸 칸은 `-`). 흰 줄을 찾아 잘라 1200×900 webp로 저장하고 `list.js`에 더해요. 원본 그림판은 `.cache/kid-art/grid-<첫 id>.png`.
 
 자막과 목소리는 코드가 넣으니 **그림 속에 글자를 넣지 않아요** (AI 그림의 한글은 자주 깨져요).
 

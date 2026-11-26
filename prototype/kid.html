@@ -106,7 +106,8 @@ button:disabled { opacity: .4; cursor: default; }
 .th-stage { position: relative; margin: 12px auto; width: 100%; max-width: 520px; aspect-ratio: 4 / 3; align-self: center; border-radius: 26px; background: radial-gradient(120% 100% at 50% 0%, #fff6d6, #bfe3ff); border: 4px solid #fff; overflow: hidden; color: var(--ink); display: grid; place-items: center; }
 .th-stage > img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; transform-origin: var(--ox, 50%) var(--oy, 50%); animation: kb 7s ease-out forwards; }
 @keyframes kb { from { transform: scale(1.02); } to { transform: scale(1.12); } }
-.th-stage.has-img > .scene { visibility: hidden; }
+.th-stage.has-img > .scene { visibility: hidden; z-index: 1; }
+.th-stage.has-img .s-sign { visibility: visible; bottom: 4%; font-size: 1rem; padding: 2px 12px; }
 .th-cap { max-width: 520px; margin: 0 auto; width: 100%; min-height: 3.2em; font-size: 1.35rem; text-align: center; animation: rise .3s; }
 .th-dots { display: flex; justify-content: center; gap: 6px; margin: 10px 0; }
 .th-dots i { width: 10px; height: 10px; border-radius: 50%; background: #3a4a78; }
@@ -226,6 +227,24 @@ button:disabled { opacity: .4; cursor: default; }
 .exch span:last-child { animation-delay: .8s; }
 .exch small { font-size: 1.1rem; }
 .exch b { font-size: 2.2rem; font-weight: normal; animation: bob 1.6s ease-in-out infinite; }
+
+.hoga { display: grid; gap: 3px; width: 70%; font-size: clamp(.78rem, 3.2vw, 1rem); line-height: 1.25; }
+.hoga .lab { text-align: center; font-size: .9em; }
+.hoga .hr { display: flex; justify-content: space-between; align-items: center; gap: 8px; padding: 1px 10px; border-radius: 9px; border: 2px solid var(--ink); opacity: 0; animation: come .4s var(--d) forwards; }
+.hoga .hr span { font-size: .85em; letter-spacing: -2px; white-space: nowrap; }
+.hoga .hr.s { background: #dfe9ff; } .hoga .hr.b { background: #ffe0e0; }
+.hoga .hr.s b { color: var(--down); font-weight: normal; } .hoga .hr.b b { color: var(--up); font-weight: normal; }
+.hoga .hr.hit { background: var(--sun); animation: come .4s var(--d) forwards, blink .8s 1.8s 2; }
+.hoga .deal { text-align: center; padding: 0; border-radius: 9px; background: var(--paper); border: 2px solid var(--ink); opacity: 0; animation: zoom .4s 1.6s forwards; }
+.bars { display: flex; align-items: flex-end; justify-content: center; gap: 8px; width: 86%; height: 56%; margin-bottom: 18%; }
+.bc { flex: 1; max-width: 90px; min-width: 0; height: 100%; display: flex; flex-direction: column; justify-content: flex-end; align-items: center; gap: 2px; }
+.bc i { width: 100%; height: calc(var(--h) * .72); background: var(--sun); border: 3px solid var(--ink); border-radius: 10px 10px 4px 4px; transform-origin: bottom; animation: grow .6s var(--d) both; }
+.bc i.up { background: #ffb3b5; } .bc i.down { background: #b9cff8; }
+.bc b { font-weight: normal; font-size: clamp(.8rem, 3.4vw, 1.05rem); }
+.bc span { font-size: clamp(.65rem, 2.8vw, .85rem); white-space: nowrap; }
+.cut { display: flex; align-items: center; justify-content: center; gap: 6px; width: 92%; margin-bottom: 12%; }
+.cut .pizza { width: 40%; height: auto; }
+.cut b { font-size: 2rem; font-weight: normal; }
 
 /* 시간 여행 */
 .travel { position: fixed; inset: 0; z-index: 7; pointer-events: none; display: grid; place-items: center; }
