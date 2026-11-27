@@ -1,15 +1,17 @@
 // 꼬마 탐험가와 스토리 모드(🔊 버튼)가 읽는 글을 Gemini TTS로 미리 녹음해 prototype/voice/<열쇠>.mp3 로 저장합니다.
 // Usage: node scripts/gen-kid-voice.mjs [--dry] [--force] [--batches=N]
-//   - 하루 호출 한도가 작아서 여러 문장을 한 번에 녹음한 뒤 긴 쉼에서 잘라요 (voice-split.mjs)
-//   - 받은 원본은 .cache/voice-batches 에 남아요. 다시 돌리면 원본부터 잘라 보므로 호출을 아껴요.
-//   - 자르기 검사에 걸린 원본은 *.rejected.wav 로 바꾸고, 다음 실행 때 더 작은 묶음으로 다시 녹음해요.
+//   - 하루 호출 한도가 작아서 여러 문장을 한 번에 녹음한 뒤 나눠요 (voice-split.mjs)
+//     쉼마다 잘게 자른 조각을 다른 Gemini 모델에 받아쓰게 하고, 이어 붙인 글이 원문과 맞는 것만 저장해요 (voice-check.mjs)
+//   - 받은 원본은 .cache/voice-batches 에 남아요. 대조를 못 끝낸 원본(.wav)은 다음 실행 때 녹음 호출 없이 다시 확인해요.
+//   - 대조에 걸린 문장은 다음 실행 때 더 작은 묶음으로 다시 녹음해요 (원본은 *.rejected.wav).
 //   - .env 의 GEMINI_API_KEY 사용 (키는 출력하지 않음)
 //   - 읽을 글은 kid.js · lab-*.js 를 그대로 실행해 모아요. 대사를 고치면 다시 돌리면 바뀐 것만 새로 만들어요.
 //   - mp3 변환에는 lamejs가 필요: npm install --prefix .cache/voice-tools @breezystack/lamejs
 //   - 목소리를 바꾸려면 KID_VOICE_NAME=Leda 처럼 주고 --force
 import { existsSync, mkdirSync, readFileSync, writeFileSync, readdirSync, unlinkSync, renameSync } from "node:fs";
 import { createHash } from "node:crypto";
-import { splitBySilence, batches } from "./voice-split.mjs";
+import { fragments, padded, batches } from "./voice-split.mjs";
+import { transcribe, assign, matches, tooLong } from "./voice-check.mjs";
 import { dirname, join } from "node:path";
 import { fileURLToPath, pathToFileURL } from "node:url";
 import vm from "node:vm";
@@ -18,7 +20,8 @@ const root = join(dirname(fileURLToPath(import.meta.url)), "..");
 const SRC = join(root, "prototype"), OUT = join(SRC, "voice");
 const MODEL = process.env.KID_VOICE_MODEL || "gemini-3.8-flash-tts";
 const VOICE = process.env.KID_VOICE_NAME || "Sulafat";
-const STYLE = "7~9세 아이에게 그림책을 읽어 주는 다정한 선생님처럼, 밝고 자연스럽게 또박또박 말해 주세요";
+const CHECK_MODEL = process.env.KID_VOICE_CHECK_MODEL || "gemini-3.5-flash-lite";
+const STYLE = "warm and friendly, reading a picture book to a young child, speaking clearly";
 const args = process.argv.slice(2), dry = args.includes("--dry"), force = args.includes("--force");
 
 // ---------- 1) 앱 코드를 실행해 읽을 글 모으기 ----------
@@ -149,29 +152,25 @@ function toMp3(samples, rate) {
 
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
 class Quota extends Error {}
-function prompt(texts) {
-  if (texts.length === 1) return `${STYLE}: ${texts[0]}`;
-  return `${STYLE}.
-아래는 서로 상관없는 ${texts.length}개의 대사예요. 빈 줄로 나뉜 대사를 순서대로 하나도 빠짐없이, 적힌 그대로 읽어 주세요.
-대사 하나가 끝날 때마다 반드시 3초 동안 아무 소리 없이 쉬세요. 한 대사 안에서는 1초 넘게 쉬지 마세요.
-이 안내문과 번호, '다음' 같은 말은 읽지 말고 대사만 읽으세요.
-
-### 대사
-${texts.join("\n\n")}`;
-}
+// text에 적은 글은 모두 소리 내어 읽혀요. 말투 지시는 반드시 style에 따로 보내요.
 async function record(texts) {
   let why = "", errors = 0, waits = 0;
   while (errors < 2 && waits < 4) {
-    const r = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${MODEL}:generateContent`, {
+    const r = await fetch("https://generativelanguage.googleapis.com/v1beta/interactions", {
       method: "POST",
       headers: { "content-type": "application/json", "x-goog-api-key": KEY },
-      body: JSON.stringify({ contents: [{ parts: [{ text: prompt(texts) }] }], generationConfig: { responseModalities: ["AUDIO"], speechConfig: { voiceConfig: { prebuiltVoiceConfig: { voiceName: VOICE } } } } }),
+      body: JSON.stringify({
+        model: MODEL,
+        input: [{ type: "user_input", content: [{ type: "text", text: texts.join("\n\n<long pause>\n\n"), annotations: [{ type: "speech_metadata", style: STYLE }] }] }],
+        response_format: { type: "audio" },
+        generation_config: { speech_config: [{ voice: VOICE }] },
+      }),
       signal: AbortSignal.timeout(600000),
     }).catch((e) => ({ status: 0, json: async () => ({ error: { message: e.message } }) }));
     const j = await r.json().catch(() => ({}));
-    const c = j.candidates?.[0], audio = c?.content?.parts?.find((p) => p.inlineData)?.inlineData;
-    if (audio && (!c.finishReason || c.finishReason === "STOP")) return Buffer.from(audio.data, "base64");
-    why = `${r.status} ${j.error?.message || c?.finishReason || ""}`.slice(0, 900);
+    const audio = j.steps?.filter((x) => x.type === "model_output").flatMap((x) => x.content || []).filter((c) => c.type === "audio").at(-1)?.data;
+    if (audio && (!j.status || j.status === "completed")) return Buffer.from(audio, "base64");
+    why = `${r.status} ${j.error?.message || j.status || ""}`.slice(0, 900);
     if (r.status === 429) {
       if (/per ?day|PerDay/i.test(JSON.stringify(j))) throw new Quota(why);
       waits++; // 분당 한도: 잠깐 기다렸다 다시
@@ -191,69 +190,89 @@ function writeList() {
   return Object.keys(have).length;
 }
 
-// 한 묶음의 원본을 잘라 저장. 검사에 걸리면 아무것도 저장하지 않고 오류
-function cut(group, wav) {
+// 한 묶음의 원본을 잘게 자르고, 받아쓴 글이 원문과 맞게 이어지는 부분만 저장
+async function cut(group, wav) {
   const { rate, pcm } = readWav(wav), samples = toSamples(pcm);
-  const parts = splitBySilence(samples, rate, group.map(([, t]) => t));
-  group.forEach(([key], i) => {
-    const { mp3, ms } = toMp3(samples.subarray(...parts[i]), rate);
+  const frags = fragments(samples, rate);
+  if (!frags.length) throw new Error("소리가 없어요");
+  const listen = (mp3) => transcribe(mp3, { key: KEY, model: CHECK_MODEL, cache: join(RAW, "heard.json") });
+  const heard = [];
+  for (const f of frags) heard.push(await listen(toMp3(padded(f, samples, rate), rate).mp3)); // 하나씩
+  const spans = assign(group.map(([, t]) => t), heard);
+  const saved = [], wrong = [];
+  for (const [i, [key, text]] of group.entries()) {
+    if (!spans[i]) { wrong.push(text); continue; }
+    const [from, to] = spans[i];
+    const { mp3, ms } = toMp3(padded([frags[from][0], frags[to][1]], samples, rate), rate);
+    // 저장하기 전에 완성한 파일을 통째로 한 번 더 확인
+    if (tooLong(text, ms) || !matches(text, await listen(mp3))) { wrong.push(text); continue; }
     writeFileSync(join(OUT, `${key}.mp3`), mp3);
     durations[key] = ms;
-  });
+    saved.push(key);
+  }
   writeList();
+  return { saved, wrong, heard };
 }
 
 const RAW = join(root, ".cache/voice-batches", `${MODEL}-${VOICE}`);
 mkdirSync(RAW, { recursive: true });
-let made = 0;
+let made = 0, bad = 0;
 const failed = [];
-let pending = new Map(todo);
-// 1) 저장해 둔 원본으로 먼저 잘라 보기 (호출하지 않음)
-for (const f of readdirSync(RAW).filter((f) => f.endsWith(".json"))) {
-  const keys = JSON.parse(readFileSync(join(RAW, f), "utf8")), wav = join(RAW, f.replace(".json", ".wav"));
-  if (force || !existsSync(wav) || !keys.every((k) => pending.has(k))) continue;
-  try {
-    cut(keys.map((k) => [k, pending.get(k)]), readFileSync(wav));
-    keys.forEach((k) => pending.delete(k));
-    made += keys.length;
-  } catch (e) { console.log(`저장된 원본 버림: ${e.message}`); renameSync(wav, wav.replace(".wav", ".rejected.wav")); }
+const pending = new Map(todo);
+const keysOf = (id) => JSON.parse(readFileSync(join(RAW, `${id}.json`), "utf8"));
+
+// 원본 하나를 확인해서 저장. 계속해도 되면 true
+async function check(id, group, label) {
+  const wav = join(RAW, `${id}.wav`);
+  let result;
+  try { result = await cut(group, readFileSync(wav)); }
+  catch (e) {
+    if (e.message === "소리가 없어요") result = { saved: [], wrong: group.map(([, text]) => text), heard: [] };
+    else { failed.push(`${label} 확인 못 함 (원본은 남겨 둠): ${e.message}`); console.log(failed.at(-1)); return false; }
+  }
+  const { saved, wrong, heard } = result;
+  made += saved.filter((k) => pending.has(k)).length;
+  saved.forEach((k) => pending.delete(k));
+  renameSync(wav, join(RAW, `${id}.${wrong.length ? "rejected" : "done"}.wav`));
+  console.log(`${label}: ${saved.length}개 저장${wrong.length ? `, ${wrong.length}개는 대조에 걸림` : ""}`);
+  if (wrong.length) console.log(`  걸린 원문: ${wrong.slice(0, 3).join(" / ")}\n  받아쓴 글: ${heard.join(" | ").slice(0, 600)}`);
+  if (wrong.length) failed.push(`${label}: ${wrong.length}개 대조 실패`);
+  bad = saved.length * 2 < group.length ? bad + 1 : 0; // 절반도 못 건지면 실패로 셈
+  return true;
 }
-// 2) 남은 것을 묶어서 녹음. 이미 한 번 버려진 문장은 절반 크기 묶음으로
-const rejected = new Set(readdirSync(RAW).filter((f) => f.endsWith(".rejected.wav")).flatMap((f) => {
-  const list = join(RAW, f.replace(".rejected.wav", ".json"));
-  return existsSync(list) ? JSON.parse(readFileSync(list, "utf8")) : [];
-}));
+
+let go = true;
+// 1) 아직 확인하지 못한 원본부터 (녹음 호출 없음)
+for (const f of readdirSync(RAW).filter((f) => /^[0-9a-f]+\.wav$/.test(f))) {
+  const id = f.slice(0, -4), keys = keysOf(id);
+  if (!go || force || !keys.some((k) => pending.has(k))) continue;
+  go = await check(id, keys.filter((k) => jobs.has(k)).map((k) => [k, jobs.get(k)]), "저장해 둔 원본");
+}
+// 2) 남은 것을 묶어서 녹음. 이미 한 번 걸린 문장은 절반 크기 묶음으로
+const rejected = new Set(readdirSync(RAW).filter((f) => f.endsWith(".rejected.wav")).flatMap((f) => keysOf(f.slice(0, -".rejected.wav".length))));
 const maxLines = Number(process.env.KID_VOICE_LINES || 20), maxChars = Number(process.env.KID_VOICE_CHARS || 800);
 const rest = [...pending];
 const groups = [
   ...batches(rest.filter(([k]) => !rejected.has(k)), maxLines, maxChars),
   ...batches(rest.filter(([k]) => rejected.has(k)), Math.ceil(maxLines / 2), Math.ceil(maxChars / 2)),
 ];
-const limit = Number(args.find((a) => a.startsWith("--batches="))?.split("=")[1] || Infinity);
+const limit = Number(args.find((a) => a.startsWith("--batches="))?.split("=")[1] ?? Infinity);
 console.log(`남은 묶음 ${groups.length}개${limit < groups.length ? ` (이번에는 ${limit}개만)` : ""}`);
-let bad = 0;
+bad = 0;
 for (const [n, group] of groups.slice(0, limit).entries()) {
+  if (!go) break;
   const keys = group.map(([k]) => k), id = createHash("sha1").update(keys.join()).digest("hex").slice(0, 12);
-  try {
-    const wav = await record(group.map(([, t]) => t));
-    writeFileSync(join(RAW, `${id}.json`), JSON.stringify(keys));
-    writeFileSync(join(RAW, `${id}.wav`), wav);
-    try {
-      cut(group, wav);
-      made += group.length;
-      bad = 0;
-      console.log(`묶음 ${n + 1}: ${group.length}개 저장`);
-    } catch (e) {
-      renameSync(join(RAW, `${id}.wav`), join(RAW, `${id}.rejected.wav`));
-      failed.push(`묶음 ${n + 1} (${group.length}개) 자르기 실패: ${e.message}`);
-      console.log(failed.at(-1));
-      if (++bad >= 3) { console.error("세 번 연속 실패해서 멈춰요. 호출 한도를 아끼려고요."); break; }
-    }
-  } catch (e) {
+  let wav;
+  try { wav = await record(group.map(([, t]) => t)); }
+  catch (e) {
     if (e instanceof Quota) console.error(`호출 한도에 닿았어요. 나중에 다시 돌리면 이어서 만들어요.\n${e.message}`);
     else failed.push(`묶음 ${n + 1} 녹음 실패: ${e.message}`);
     break;
   }
+  writeFileSync(join(RAW, `${id}.json`), JSON.stringify(keys));
+  writeFileSync(join(RAW, `${id}.wav`), wav);
+  go = await check(id, group, `묶음 ${n + 1}`);
+  if (bad >= 3) { console.error("세 번 연속 실패해서 멈춰요. 호출 한도를 아끼려고요."); break; }
 }
 
 // 이제 안 쓰는 파일 지우기 (모두 만들어졌을 때만)

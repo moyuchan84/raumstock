@@ -1,12 +1,12 @@
-// 여러 문장을 한 번에 녹음한 소리를 '긴 쉼'에서 잘라 문장별로 나눕니다.
-// 조금이라도 의심스러우면 오류를 던져요. 잘못 자른 대사를 저장하느니 묶음을 버리는 편이 나아요.
+// 여러 문장을 한 번에 녹음한 소리를 나눕니다.
+// 쉼의 길이만으로는 문장 사이와 문장 안을 구별할 수 없어요. 그래서 여기서는 쉼마다 잘게 자르기만 하고,
+// 어느 조각들이 어느 문장인지는 voice-check.mjs가 받아쓴 글로 정해요.
 const FRAME = 0.02; // 초
-const MIN_GAP = 1.2; // 문장 사이로 인정하는 가장 짧은 쉼(초)
-const CLEAR = 1.35; // 고른 쉼은 문장 안의 가장 긴 쉼보다 이 배수 이상 길어야 해요
-const PAD = 0.15; // 잘라 낸 앞뒤에 남기는 여유(초)
+const MIN_GAP = 0.35; // 여기보다 긴 쉼에서 자름(초)
+const PAD = 0.15; // 잘라 낸 앞뒤에 남기는 여유(초). MIN_GAP의 절반보다 작아야 옆 조각과 겹치지 않아요
 
-// samples: Int16Array, rate: Hz, texts: 읽은 문장(순서대로) → 문장마다 [시작 칸, 끝 칸]
-export function splitBySilence(samples, rate, texts) {
+// samples: Int16Array, rate: Hz → 소리 조각마다 [시작 칸, 끝 칸] (여유 없음)
+export function fragments(samples, rate) {
   const size = Math.round(rate * FRAME);
   const loud = [];
   for (let i = 0; i < samples.length; i += size) {
@@ -17,41 +17,23 @@ export function splitBySilence(samples, rate, texts) {
   }
   const level = [...loud].sort((a, b) => a - b)[Math.floor(loud.length * 0.95)] || 0;
   const threshold = Math.max(60, level * 0.03);
-  const voiced = loud.map((v) => v > threshold);
-  const first = voiced.indexOf(true), last = voiced.lastIndexOf(true);
-  if (first < 0) throw new Error("소리가 없어요");
+  const out = [];
+  let from = -1, to = -1; // 지금 조각의 첫 칸과 마지막으로 소리가 난 칸 다음
+  const close = () => out.push([from * size, Math.min(samples.length, to * size)]);
+  loud.forEach((v, i) => {
+    if (v <= threshold) return;
+    if (from < 0) from = i;
+    else if ((i - to) * FRAME >= MIN_GAP - 1e-9) { close(); from = i; }
+    to = i + 1;
+  });
+  if (from >= 0) close();
+  return out;
+}
 
-  const gaps = []; // 말 사이의 조용한 구간
-  for (let i = first, from = -1; i <= last; i++) {
-    if (!voiced[i]) { if (from < 0) from = i; }
-    else if (from >= 0) { gaps.push({ from, to: i, sec: (i - from) * FRAME }); from = -1; }
-  }
-  const need = texts.length - 1;
-  const bySize = [...gaps].sort((a, b) => b.sec - a.sec);
-  if (bySize.length < need) throw new Error(`쉼이 모자라요 (${bySize.length}/${need})`);
-  const chosen = bySize.slice(0, need);
-  if (need) {
-    const shortest = chosen.at(-1).sec, rest = bySize[need]?.sec || 0;
-    if (shortest < MIN_GAP) throw new Error(`문장 사이 쉼이 너무 짧아요 (${shortest.toFixed(2)}초)`);
-    if (shortest < rest * CLEAR) throw new Error(`문장 사이와 문장 안의 쉼을 구별하기 어려워요 (${shortest.toFixed(2)}초 / ${rest.toFixed(2)}초)`);
-  }
-
-  chosen.sort((a, b) => a.from - b.from);
-  const parts = [first, ...chosen.map((g) => g.to)].map((from, i) => [from, i < need ? chosen[i].from : last + 1]);
-
-  // 길이 검사: 글자 수에 비해 너무 길거나 짧은 조각이 있으면 문장이 밀렸거나 빠진 것
-  const secs = parts.map(([a, b]) => (b - a) * FRAME);
-  const weight = texts.map((t) => t.replace(/[^\p{L}\p{N}]/gu, "").length + 4);
-  if (texts.length > 2) {
-    const per = secs.map((s, i) => s / weight[i]);
-    const mid = [...per].sort((a, b) => a - b)[Math.floor(per.length / 2)];
-    per.forEach((v, i) => {
-      if (v < mid * 0.55 || v > mid * 1.9) throw new Error(`길이가 글과 맞지 않아요: ${i + 1}번째 "${texts[i].slice(0, 30)}" ${secs[i].toFixed(1)}초`);
-    });
-  }
-
+// 조각 범위에 앞뒤 여유를 붙임
+export function padded([a, b], samples, rate) {
   const pad = Math.round(PAD * rate);
-  return parts.map(([a, b]) => [Math.max(0, a * size - pad), Math.min(samples.length, b * size + pad)]);
+  return samples.subarray(Math.max(0, a - pad), Math.min(samples.length, b + pad));
 }
 
 // 순서를 지키며 문장을 묶음으로 나눔
