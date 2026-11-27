@@ -179,5 +179,5 @@ window.RAUM_KID_LAB = ({ $, c1, say, done, seen, show, exit, mode }) => {
     }
   }
 
-  return { buttons, render, act, open, pending, firstUnseen, count: LABS.length };
+  return { buttons, render, act, open, pending, firstUnseen, count: LABS.length, pages: PAGES };
 };

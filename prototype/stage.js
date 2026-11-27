@@ -330,6 +330,20 @@ window.RAUM_STAGE = (() => {
       <h2 class="sec">가상 상황 <small>가상 회사 · 시나리오 엔진</small></h2><ul class="stages">${VIRTUAL.map((s) => card(s, false)).join("")}</ul>
       <p class="small muted">가상 상황의 회사와 뉴스는 모두 지어낸 것이에요. 실제 상황은 실제 일별 수정 종가(1달러=1,200원)예요. 역사 스테이지는 실제 일별 수정 종가(Yahoo Finance 기반)이고, 미국 주식은 1달러=1,200원으로 계산했어요.</p>`;
   }
+  // ---------- 컴퓨터 친구 (rival.js) ----------
+  // 컴퓨터는 10거래일마다, 그날까지의 값만 보고 정해요. 수수료는 나와 똑같이 내요. 순위 없이 나란히 보여 줘요.
+  function rivals(run, d) {
+    if (!run.bots || !window.RAUM_RIVAL) return "";
+    const points = [];
+    for (let i = d.start; i < d.end; i += 10) points.push(i);
+    const bots = window.RAUM_RIVAL.play({ syms: d.assets.filter((a) => !a.index).map((a) => a.sym), price: (s, i) => price(d, s, i), points, now: run.day, start: START_CASH, fee: FEE, seed: run.bots });
+    const holding = (syms) => (syms.length ? syms.map((s) => name(d, s)).join(", ") : "현금만");
+    const row = (who, v, syms, trades, how) => { const r = v / START_CASH - 1; return `<li><span style="flex:1">${who} <b class="${cls(r)}" style="float:right">${pct(r)}</b><br><small class="muted">가진 것: ${holding(syms)} · ${trades}${how ? ` · ${how}` : ""}</small></span></li>`; };
+    return `<h3 class="sub">🤖 컴퓨터 친구와 나란히</h3><ul class="orders">${[
+      row("🧑 나", value(run, d), Object.keys(run.pos), `거래 ${run.trades}번`),
+      ...bots.map((b) => row(`${b.e} ${b.name}`, b.value, b.holds.map((h) => h.sym), `바꾼 날 ${b.trades}번`, b.how)),
+    ].join("")}</ul><p class="small muted">컴퓨터도 그날까지의 값만 알아요. 한 판의 결과에는 운이 섞여 있어요.</p>`;
+  }
   function viewPlay(S) {
     const run = S.stg, d = data(run), i = run.day;
     const v = value(run, d), r = v / START_CASH - 1, ir = price(d, d.index, i) / price(d, d.index, d.start) - 1;
@@ -351,6 +365,7 @@ window.RAUM_STAGE = (() => {
         <p class="smsg" aria-live="polite">${msg}</p>
       </div>
       ${todayNews.length ? `<div class="snews">${todayNews.map((n) => `<article class="newscard ${n.k === i ? "fresh" : ""}"><span class="ntag">${n.k === i ? "오늘 · " : ""}${n.kind === "official" ? "공식 발표" : n.kind === "earnings" ? "실적 발표" : "뉴스"}</span><h3>${n.headline}</h3>${n.body ? `<p>${n.body}</p>` : ""}</article>`).join("")}</div>` : `<p class="small muted">최근 큰 뉴스는 없어요. 차트와 시장 흐름을 보세요.</p>`}
+      ${rivals(run, d)}
       <h3 class="sub">내 주머니</h3>
       <ul class="orders">${[`<li>현금 <b style="margin-left:auto">${won(run.cash)}</b></li>`, ...Object.entries(run.pos).map(([k, ps]) => `<li>${name(d, k)} ${fmt(ps.qty)}주 <b class="${cls(ps.qty * price(d, k, i) - ps.cost)}" style="margin-left:auto">${won(ps.qty * price(d, k, i))}</b></li>`)].join("")}</ul>
       ${run.mp && window.RAUM_MP ? window.RAUM_MP.controls(S) : `<div class="stime"><button class="btn ghost" data-stg="next:1">다음 날 ▶</button><button class="btn ghost" data-stg="next:5">5일 ▶</button><button class="btn ghost" data-stg="next:999">끝까지 ⏭</button></div>`}
@@ -380,6 +395,7 @@ window.RAUM_STAGE = (() => {
       <dl class="kv"><div><dt>내 수익률</dt><dd class="${cls(R.r)}">${pct(R.r)}</dd></div><div><dt>시장(지수 ETF)</dt><dd class="${cls(R.ir)}">${pct(R.ir)}</dd></div><div><dt>가장 크게 떨어졌을 때</dt><dd class="${R.mdd <= -0.15 ? "down" : ""}">${pct(R.mdd)}</dd></div></dl>
       <p class="small">★ 수익 ${R.r > 0 ? "✓" : "✗"} · ★ 시장보다 잘하기 ${R.r >= R.ir - 0.005 ? "✓" : "✗"} · ★ −15% 안쪽 ${R.mdd > -0.15 ? "✓" : "✗"} · 거래 ${run.trades}번 · 수수료 ${won(run.fees)}</p>
       ${reveal}
+      ${rivals(run, d)}
       <h3 class="sub">이 기간 각 상품의 성적</h3>
       <ul class="orders">${rows.map(({ a, r }) => `<li><i class="dotc" style="background:${a.color}"></i>${a.name} <b class="${cls(r)}" style="margin-left:auto">${pct(r)}</b></li>`).join("")}</ul>
       <p class="note">${tip}</p>
@@ -429,7 +445,7 @@ window.RAUM_STAGE = (() => {
     else if (a === "resume") sub = "play";
     else if (a === "start") start(S, b);
     else if (a === "random") random(S, b === "real");
-    else if (a === "again") { const run = S.stg; if (run.random) random(S, run.real); else start(S, run.id); }
+    else if (a === "again") { const run = S.stg; if (run.random) random(S, run.real); else start(S, run.id); if (run.bots) S.stg.bots = 1 + Math.floor(Math.random() * 1e6); }
     else if (a === "sel") S.stg.sel = b;
     else if (a === "buy" || a === "sell") trade(S, a, Number(b));
     else if (a === "next") { if (S.stg?.mp && window.RAUM_MP) return window.RAUM_MP.onNext(S, Number(b)); advance(S, Number(b)); }

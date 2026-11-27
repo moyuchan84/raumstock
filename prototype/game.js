@@ -615,9 +615,7 @@
     if (act === "splash") return showSplash();
     if (act === "speak") {
       const s = step(); if (!s) return;
-      const q = s.quiz ? s.quiz.q + " " + s.quiz.opts.join(", ") : s.predict ? s.predict.q + " " + s.predict.opts.join(", ") : "";
-      const t = s.task || s.free ? txt(s.task) : s.news ? s.news.map((n) => n.title + ". " + n.body).join(" ") : q || (S.kid && s.kid) || txt(s.say) || "";
-      window.RAUM_SPEAK.setOn(true); return window.RAUM_SPEAK.say(t);
+      window.RAUM_SPEAK.setOn(true); return window.RAUM_SPEAK.say(ST.speech(s, S.kid, txt));
     }
     if (act === "kid") { S.kid = !S.kid; if ($("#sheet").classList.contains("open") && ord) renderOrder(); return render(); }
     if (act === "free-time") { S.freeMode = true; return go("watch"); }

@@ -256,6 +256,9 @@ window.RAUM_MP = (() => {
     const opts = ST().playable();
     return `<section class="hero thero"><p class="eyebrow">TOGETHER</p><h1>👥 함께 하기</h1><p class="muted">같은 시장에서 친구·가족과 겨뤄요. 인터넷 서버 없이 휴대폰끼리 직접 연결해요.</p></section>
       ${nameField}
+      <section class="tcard"><h2>🤖 컴퓨터와 대결</h2><p class="small muted">혼자서도 할 수 있어요. 컴퓨터 친구 셋과 같은 시장에서 플레이하고, 순위 없이 결과와 고른 방법을 나란히 봐요.</p>
+        <label class="fld"><span>판 고르기</span><select id="mpBotChoice" class="sel"><option value="random-virtual">🎲 가상 랜덤</option><option value="random-real">🎲 실제 랜덤</option>${opts.map((o) => `<option value="${o.id}">${o.label}</option>`).join("")}</select></label>
+        <button class="btn primary" data-mp="vsbot">컴퓨터와 시작</button></section>
       <section class="tcard"><h2>📡 실시간 근거리 대전</h2><p class="small muted">같은 Wi-Fi(또는 한 사람의 핫스팟)에 모두 연결하세요. QR 코드를 서로 찍어 연결해요. 방장이 날짜를 넘기면 모두 함께 넘어가고, 순위가 실시간으로 바뀌어요.</p>
         <div class="trade-btns2"><button class="btn primary" data-mp="host">👑 방 만들기</button><button class="btn" data-mp="join">🙋 방 들어가기</button></div></section>
       <section class="tcard"><h2>🔢 같은 판 코드 대결</h2><p class="small muted">Wi-Fi도 인터넷 연결도 필요 없어요(앱만 열려 있으면 돼요). 한 사람이 판을 고르고 코드를 알려 주면, 모두 같은 시장으로 각자 플레이한 뒤 결과를 보여 주며 겨뤄요.</p>
@@ -285,6 +288,10 @@ window.RAUM_MP = (() => {
       else if (cmd === "ready") { M.ready = !M.ready; reportState(); }
       else if (cmd === "lobby" || cmd === "waiting") { M.screen = cmd === "waiting" ? "game" : "lobby"; if (cmd === "lobby") { s.stg && (s.stg.mp = null); } }
       else if (cmd === "leave") { M.peers.forEach((p) => p.pc.close()); M.guestPC?.close(); stopScan(); Object.assign(M, { role: null, peers: [], pending: null, guestPC: null, hostDC: null, board: [], spec: null, screen: "lobby", offerText: "", answerText: "" }); if (s.stg) s.stg.mp = null; }
+      else if (cmd === "vsbot") {
+        ST().startSpec(s, ST().specForChoice(val("mpBotChoice")), { bots: 1 + Math.floor(Math.random() * 1e6) });
+        ST().go("play"); s.view = "stage";
+      }
       else if (cmd === "makecode" || cmd === "usecode") {
         const spec = cmd === "makecode" ? ST().specForChoice(val("mpCodeChoice")) : ST().specFromCode((M.codeIn = val("mpCode")));
         if (!spec) { M.msg = "코드를 찾지 못했어요. 다시 확인해 주세요."; }
