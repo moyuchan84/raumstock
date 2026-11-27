@@ -440,6 +440,12 @@
   // ---------- 코치 (스토리 진행) ----------
   const COACH_AV = `<span class="av" aria-hidden="true">R</span>`;
   function txt(v) { return typeof v === "function" ? v(G) : v; }
+  let foldedAt = null;
+  // 설명창 높이만큼 배경 화면 아래를 비워 둬서, 가려진 내용도 스크롤하면 설명창 위로 올라와요
+  const dockEl = document.querySelector(".dock");
+  if (window.ResizeObserver) new ResizeObserver(() => {
+    document.querySelector(".app").style.paddingBottom = `calc(var(--tab-h) + env(safe-area-inset-bottom) + ${dockEl.offsetHeight + 12}px)`;
+  }).observe(dockEl);
   function renderCoach() {
     const box = $("#coach");
     // 스토리 코치는 스토리 화면에서만 (스테이지·훈련·함께 하기에서는 숨김)
@@ -447,14 +453,16 @@
     if (!s) { box.className = "coach hide"; box.innerHTML = ""; renderTimebar(s); return; }
     const ch = chapter();
     const spk = window.RAUM_SPEAK?.supported ? `<button class="kidtoggle spk" data-act="speak" aria-label="소리로 듣기">🔊</button>` : "";
-    const head = `<div class="c-head">${COACH_AV}<span>${ch.no}장 · ${ch.title}</span>${kidToggle()}${spk}<small>${S.step + 1}/${ch.steps.length}</small></div>`;
+    const folded = foldedAt === `${S.ch}-${S.step}`; // 접기는 지금 단계에만
+    const fold = s.task || s.free ? "" : `<button class="kidtoggle fold" data-act="fold" aria-expanded="${!folded}">${folded ? "▲ 펼치기" : "▼ 접기"}</button>`;
+    const head = `<div class="c-head">${COACH_AV}<span class="ch-title">${ch.no}장 · ${ch.title}</span>${kidToggle()}${spk}${fold}<small>${S.step + 1}/${ch.steps.length}</small></div>`;
     renderTimebar(s);
     if (s.task || s.free) {
       box.className = "coach mini";
       box.innerHTML = `${head}<p>🎯 ${txt(s.task)}</p>${s.free ? `<p class="small muted">목표일 ${dateLabel(D.dates[diOf(s.free)])} · ${Math.max(0, diOf(s.free) - S.di)}거래일 남음</p>` : ""}`;
       return;
     }
-    box.className = "coach full";
+    box.className = folded ? "coach full folded" : "coach full";
     let body = "", actions = `<button class="btn primary" data-act="next">다음</button>`;
     const cover = `<img class="cover" src="img/cover-${ch.id}.webp" alt="">`;
     if (s.say) body = `${S.step === 0 ? cover : ""}${s.title ? `<h3>${s.title}</h3>` : ""}<p>${txt(s.say)}</p>${kidBox(s.kid)}`;
@@ -613,6 +621,7 @@
     if (act === "day") return advance(1, step()?.free);
     if (act === "week") return advance(5, step()?.free);
     if (act === "splash") return showSplash();
+    if (act === "fold") { const key = `${S.ch}-${S.step}`; foldedAt = foldedAt === key ? null : key; return renderCoach(); }
     if (act === "speak") {
       const s = step(); if (!s) return;
       window.RAUM_SPEAK.setOn(true); return window.RAUM_SPEAK.say(ST.speech(s, S.kid, txt));

@@ -157,7 +157,13 @@ b, .tnum, dd, output, input { font-variant-numeric: tabular-nums; }
 .av { width: 26px; height: 26px; border-radius: 50%; display: grid; place-items: center; background: var(--accent); color: #141a2b; font-weight: 800; font-size: .8rem; }
 .c-body { display: grid; gap: 10px; } .c-body h3 { font-size: 1.1rem; }
 .c-act { display: flex; justify-content: flex-end; }
-.coach.full { animation: rise .25s ease-out; }
+/* 큰 설명창: 머리줄과 '다음' 버튼은 고정하고 본문만 스크롤. 접으면 뒤 화면이 보여요 */
+.coach.full { animation: rise .25s ease-out; display: flex; flex-direction: column; max-height: 56dvh; overflow: hidden; }
+.coach.full > .c-head, .coach.full > .c-act { flex: none; }
+.coach.full > .c-body { flex: 0 1 auto; min-height: 0; overflow-y: auto; overscroll-behavior: contain; }
+.coach.full .cover { max-height: 20dvh; }
+.coach.full.folded > .c-body { display: none; }
+.coach.mini { overscroll-behavior: contain; }
 @keyframes rise { from { transform: translateY(12px); opacity: 0; } }
 .seeds { display: grid; gap: 8px; }
 .seed { display: grid; gap: 2px; text-align: left; padding: 12px 14px; background: var(--surface); border: 1px solid var(--line); border-radius: 12px; } .seed small { color: var(--muted); font-size: .8rem; }
@@ -205,7 +211,8 @@ dd.kid { color: #ffd98a; font-size: .85rem; }
 .kidline { background: color-mix(in srgb, var(--accent) 10%, var(--surface)); border-radius: 10px; padding: 8px 10px; font-size: .85rem; color: #ffe3a3; line-height: 1.55; }
 .kidtoggle { font-size: .72rem; font-weight: 700; padding: 3px 9px; border-radius: 99px; background: var(--surface-2); color: var(--muted); white-space: nowrap; }
 .kidtoggle.on { background: color-mix(in srgb, var(--accent) 22%, transparent); color: var(--accent); }
-.c-head .kidtoggle { margin-left: auto; } .c-head .spk { margin-left: 6px; } .c-head .kidtoggle + small { margin-left: 8px; }
+.c-head .kidtoggle { margin-left: auto; } .c-head .spk, .c-head .fold { margin-left: -2px; } .c-head .kidtoggle + small { margin-left: 0; }
+.c-head { gap: 6px; } .c-head .ch-title { min-width: 0; overflow: hidden; white-space: nowrap; text-overflow: ellipsis; }
 .kv.list dt { display: grid; }
 .fbars small.kid { grid-column: 1 / -1; text-align: left; font-size: .74rem; color: #ffd98a; margin-top: -4px; }
 
@@ -352,7 +359,32 @@ dd.kid { color: #ffd98a; font-size: .85rem; }
 .pulse { position: relative; animation: pulse 1.6s ease-in-out infinite; border-radius: 12px; }
 @keyframes pulse { 0%, 100% { box-shadow: 0 0 0 0 rgb(255 200 61 / 0); } 50% { box-shadow: 0 0 0 4px rgb(255 200 61 / .55); } }
 @media (prefers-reduced-motion: reduce) { *, *::before { animation: none !important; transition: none !important; } }
+
+/* 앱을 켤 때 잠깐 보이는 로고 화면 */
+.intrologo { position: fixed; inset: 0; z-index: 110; display: grid; place-content: center; justify-items: center; gap: 14px; text-align: center; background: radial-gradient(120% 90% at 50% 30%, #1d2b52 0%, #070b16 70%); cursor: pointer; animation: intrologo-out .35s 1.5s forwards; }
+.intrologo .coin3d { width: 112px; height: 112px; margin: 0; animation: spin 1.5s cubic-bezier(.3, .7, .3, 1) both; }
+.intrologo .cf { font-size: 3rem; }
+.intrologo b { font-size: 3rem; font-weight: 900; letter-spacing: -.03em; background: linear-gradient(180deg, #fff, #ffd76a); -webkit-background-clip: text; background-clip: text; color: transparent; animation: intrologo-up .6s .2s both; }
+.intrologo small { color: var(--muted); font-size: .8rem; font-weight: 700; letter-spacing: .28em; animation: intrologo-up .6s .35s both; }
+@keyframes intrologo-up { from { opacity: 0; transform: translateY(14px); } to { opacity: 1; transform: none; } }
+@keyframes intrologo-out { to { opacity: 0; visibility: hidden; } }
+@media print { .intrologo { display: none; } }
 </style>
+
+<div id="intrologo" class="intrologo" aria-hidden="true">
+  <div class="coin3d"><div class="cf front">R</div><div class="cf back">R</div></div>
+  <b>라움스톡</b>
+  <small>RAUMSTOCK ACADEMY</small>
+</div>
+<script>
+// 처음 켰을 때만 보여 줘요. 누르면 바로 넘어가고, QR(#...)로 들어오면 건너뛰어요.
+(() => {
+  const el = document.getElementById("intrologo");
+  if (sessionStorage.getItem("raum-splash") || location.hash) return el.remove();
+  el.onclick = () => el.remove();
+  setTimeout(() => el.remove(), 1900);
+})();
+</script>
 
 <div class="app">
   <header id="top"></header>
