@@ -352,6 +352,24 @@ button:disabled { opacity: .4; cursor: default; }
 @media (max-width: 420px) { #top { gap: 4px; } #top .chip { padding: 4px 7px; font-size: .9rem; } #top .iconbtn { width: 38px; height: 38px; } }
 
 @media (prefers-reduced-motion: reduce) { *, *::before, *::after { animation-duration: .01ms !important; animation-iteration-count: 1 !important; } }
+
+/* 같이 겨루기 */
+.vsname { display: flex; align-items: center; gap: 8px; margin-bottom: 8px; }
+.vsname input { flex: 1; min-width: 0; font: inherit; padding: 8px 12px; border-radius: 14px; border: 3px solid var(--ink); }
+.vsqr { display: block; width: min(260px, 100%); margin: 12px auto 0; image-rendering: pixelated; }
+.vstext { display: block; width: 100%; min-height: 64px; margin: 8px 0; font: 12px/1.35 ui-monospace, monospace; border-radius: 12px; border: 2px solid var(--ink); padding: 8px; }
+.vsvideo { display: block; width: 100%; aspect-ratio: 1; object-fit: cover; border-radius: 16px; background: #000; margin-bottom: 8px; }
+.vstitle { margin: 18px 0 0; font-size: 1.3rem; text-align: center; }
+.vsgrid { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 10px; margin-top: 10px; }
+.vsp { padding: 10px; border-radius: 18px; background: var(--paper); border: 3px solid var(--ink); box-shadow: 3px 3px 0 var(--ink); font-size: .9rem; }
+.vsp.me { background: #fff7d6; }
+.vsp.bot { background: var(--paper-2); }
+.vsh b { display: block; font-size: 1.05rem; overflow-wrap: anywhere; }
+.vsh span { font-size: 1.25rem; }
+.vsp dl { margin: 6px 0 0; }
+.vsp dt { margin-top: 6px; font-size: .75rem; color: var(--muted); }
+.vsp dd { margin: 0; }
+.vsdel { margin-top: 8px; font-size: .75rem; color: var(--muted); text-decoration: underline; padding: 0; }
 </style>
 </head>
 <body>
@@ -363,6 +381,7 @@ button:disabled { opacity: .4; cursor: default; }
 <div id="overlay" class="overlay" hidden></div>
 <div id="theater" class="theater" hidden></div>
 
+<script src="voice/list.js" onerror="window.RAUM_VOICE={}"></script>
 <script src="speak.js"></script>
 <script src="daily.js"></script>
 <script src="art.js"></script>
@@ -372,6 +391,8 @@ button:disabled { opacity: .4; cursor: default; }
 <script src="lab-easy.js"></script>
 <script src="lab-full.js"></script>
 <script src="kid-lab.js"></script>
+<script src="rival.js"></script>
+<script src="kid-vs.js"></script>
 <script src="img/kid/list.js" onerror="window.RAUM_KID_IMGS=[]"></script>
 <script src="kid.js"></script>
 </body>

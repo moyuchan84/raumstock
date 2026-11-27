@@ -243,10 +243,10 @@ dd.kid { color: #ffd98a; font-size: .85rem; }
 .chap.train { border-color: color-mix(in srgb, var(--mint) 50%, var(--line)); }
 
 /* 스플래시 */
-.splash { position: fixed; inset: 0; z-index: 100; display: grid; place-items: center; background: radial-gradient(120% 90% at 50% 0%, #1d2b52 0%, #070b16 65%); opacity: 0; transition: opacity .35s; overflow: hidden; }
+.splash { position: fixed; inset: 0; z-index: 100; display: grid; place-items: center; background: radial-gradient(120% 90% at 50% 0%, #1d2b52 0%, #070b16 65%); opacity: 0; transition: opacity .35s; overflow-x: hidden; overflow-y: auto; overscroll-behavior: contain; }
 .splash.on { opacity: 1; }
 .splash[hidden] { display: none; }
-.sp-bg { position: absolute; inset: -10% -20%; display: grid; gap: 14px; align-content: center; transform: rotate(-8deg); opacity: .22; }
+.sp-bg { position: fixed; inset: -10% -20%; display: grid; gap: 14px; align-content: center; transform: rotate(-8deg); opacity: .22; }
 .sp-row { display: flex; gap: 14px; width: max-content; animation: drift 60s linear infinite; }
 .sp-row.rev { animation-direction: reverse; animation-duration: 75s; }
 .sp-row img { width: 240px; aspect-ratio: 16 / 9; object-fit: cover; border-radius: 14px; }
@@ -390,6 +390,7 @@ dd.kid { color: #ffd98a; font-size: .85rem; }
 <div id="sheet" role="dialog" aria-modal="true"></div>
 <div id="toast" role="status"></div>
 
+<script src="voice/list.js" onerror="window.RAUM_VOICE={}"></script>
 <script src="speak.js"></script>
 <script src="daily.js"></script>
 <script src="fin.js"></script>
@@ -399,6 +400,7 @@ dd.kid { color: #ffd98a; font-size: .85rem; }
 <script src="stages-real.js"></script>
 <script src="stages-hist.js"></script>
 <script src="stage.js"></script>
+<script src="rival.js"></script>
 <script src="mp.js"></script>
 <script src="teach.js"></script>
 <script src="game.js"></script>

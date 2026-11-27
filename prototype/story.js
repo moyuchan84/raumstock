@@ -172,5 +172,15 @@ window.RAUM_STORY = (() => {
     ["신용 / 미수 / 반대매매", "증권사 돈을 빌려 사는 것 / 대금을 나중에 내기로 하고 사는 것 / 담보가 모자라면 증권사가 강제로 파는 것.", "증권회사에 돈을 빌려 사기 / 돈을 나중에 내기로 하고 사기 / 못 갚으면 증권회사가 내 주식을 강제로 팔기."],
   ];
 
-  return { chapters, dividends, extraNews, glossary };
+  // 🔊 버튼이 읽는 글. scripts/gen-kid-voice.mjs도 같은 함수로 모아 녹음해요.
+  // kid: '쉽게 보기'를 켰는지, txt: 함수로 된 대사를 글로 바꾸는 함수
+  function speech(s, kid, txt) {
+    if (s.task || s.free) return txt(s.task);
+    if (s.news) return s.news.map((n) => n.title + ". " + n.body).join(" ");
+    const ask = s.quiz || s.predict;
+    if (ask) return ask.q + " " + ask.opts.join(", ");
+    return (kid && s.kid) || txt(s.say) || "";
+  }
+
+  return { chapters, dividends, extraNews, glossary, speech };
 })();

@@ -57,14 +57,34 @@
     const my = ++tok;
     let fired = false;
     const fin = () => { if (fired || my !== tok) return; fired = true; setTimeout(() => my === tok && done?.(), wait); };
-    const plain = SP.plain(text);
+    const plain = [].concat(text).map(SP.plain).join(" ");
     // 소리가 꺼졌거나 onend가 안 오는 브라우저를 위한 대비 시간
-    const fallback = SP.on && SP.supported ? 2500 + plain.length * 160 : 1600 + plain.length * 75;
-    setTimeout(fin, fallback);
-    SP.say(text, { onend: (ok) => (ok ? fin() : null) });
+    let timer = setTimeout(fin, SP.on && SP.supported ? 2500 + plain.length * 160 : 1600 + plain.length * 75);
+    SP.say(text, {
+      // 음성 파일은 길이를 아니까, 말이 끝나기 전에 넘어가지 않게 대비 시간을 다시 잡아요
+      onstart: (ms) => { clearTimeout(timer); timer = setTimeout(fin, ms + 5000); },
+      onend: (ok) => (ok ? fin() : null),
+    });
     return () => { tok++; SP.stop(); };
   }
   function cancelTalk() { tok++; SP.stop(); }
+
+  // ---------- 읽는 글 ----------
+  // scripts/gen-kid-voice.mjs가 같은 함수로 글을 모아 음성을 만들어요. 읽는 말을 바꾸면 스크립트를 다시 돌려요.
+  const VOICE = {
+    travel: "슝, 시간 여행!",
+    news: (n) => `속보! ${n.t} ${n.b}`,
+    choose: (q, opts) => `${q} ${opts.join(". ")}`,
+    trade: (st) => st.trade + (st.parent ? ` 엄마 아빠랑 이야기해요. ${st.parent}` : ""),
+    versus: "컴퓨터 친구와 내 친구는 어떻게 골랐을까요? 나란히 놓고 이야기해 봐요.",
+    tripEnd: "여행 끝! 이번 여행에서 내가 생각한 것들을 다시 살펴봐요.",
+    guideNext: "잘 봤어요! 다음 것도 해 볼까요? 쉬었다 해도 돼요.",
+    guideDone: "잘 봤어요!",
+    quiz: (q, opts) => [`퀴즈! ${q}`, ...opts],
+    answer: (quiz, ok) => [ok ? "정답!" : `아쉬워요. 정답은 ${quiz.a}.`, quiz.why],
+    word: (w, m) => `${w}. ${m}`,
+    shop: (s) => `${s.kid}. 진짜 이름은 ${s.real}. ${s.what}`,
+  };
 
   // ---------- 장면 그림 ----------
   const people = (list, leave = false) => `<div class="s-ppl ${leave ? "leave" : ""}">${list.map((p, i) => `<span style="--d:${0.2 + i * 0.25}s">${p}</span>`).join("")}</div>`;
@@ -351,7 +371,7 @@
         "사람들이 너무 무서워서 주식을 마구 팔았어요. 그래서 값이 뚝 떨어졌어요.",
         () => `시장 기분은 ${mood()[0]} ${mood()[1]}! 2020년에서 가장 무서운 날이에요.`,
         () => `배 여행 가게는 1월보다 ${moved(ratio("CCL", START, S.di))}. 그런데 화상 수업 가게는 ${moved(ratio("ZM", START, S.di))}!`,
-        () => `내 동전 10개는 지금 ${c1(total())}개가 됐어요.`,
+        { show: () => `내 동전 10개는 지금 ${c1(total())}개가 됐어요.`, voice: "내 동전 10개가 지금 몇 개가 됐는지 화면에서 같이 봐요." },
       ], mood: "scared" },
       { predict: { key: "fear", q: "무서울 때, 너라면 어떻게 할래?", opts: ["🙈 다 팔고 저금통에 넣을래", "🧘 그냥 기다릴래", "🛒 싸졌으니 더 살래"] } },
       { trade: "바꾸고 싶으면 사고팔고, 아니면 그대로 둬요. 둘 다 괜찮아요.", parent: "값이 떨어졌을 때 기분이 어땠어? 가게가 하는 일도 달라졌을까?" },
@@ -363,7 +383,7 @@
         () => `그래서 화상 수업 가게에 손님이 엄청 많아졌어요. 1월보다 ${moved(ratio("ZM", START, S.di))}!`,
         () => `무서웠던 3월보다 택배 가게는 ${moved(ratio("AMZN", near("2020-03-16"), S.di))}. 사람들이 다시 용기를 냈어요.`,
         "미국은 3월에 금리를 거의 0까지 내렸어요. 은행 이자가 적어지자 사람들이 다시 주식을 샀어요.",
-        () => `내 동전은 지금 ${c1(total())}개예요.`,
+        { show: () => `내 동전은 지금 ${c1(total())}개예요.`, voice: "내 동전이 지금 몇 개인지 화면에서 같이 봐요." },
       ], mood: "happy" },
       { trade: "가게를 바꿔 볼까요? 그대로 둬도 돼요.", parent: "집에만 있을 때 우리 가족은 뭘 많이 했지? 그건 어느 회사 거였을까?" },
     ] },
@@ -382,7 +402,7 @@
     ] },
     { em: "🎆", title: "12월 · 여행 끝!", seq: [
       { travel: "2020-12-31" },
-      { say: ["2020년의 마지막 날이에요. 여행이 끝났어요!", () => `내 동전 10개는… ${c1(total())}개가 됐어요!`], mood: "proud" },
+      { say: ["2020년의 마지막 날이에요. 여행이 끝났어요!", { show: () => `내 동전 10개는… ${c1(total())}개가 됐어요!`, voice: "내 동전 10개는 몇 개가 됐을까요? 화면에서 확인해 봐요!" }], mood: "proud" },
       { end: true },
     ] },
   ];
@@ -400,7 +420,7 @@
   });
   // 아이 버전(easy) · 어른 버전(full): 겪어 보기 설명이 달라져요
   const mode = () => (L.mode === "full" ? "full" : "easy");
-  function goHome() { cancelTalk(); view = "home"; if (S.phase === "end") S.phase = "intro"; save(); render(); scrollTo(0, 0); }
+  function goHome() { cancelTalk(); VS.close(); view = "home"; if (S.phase === "end") S.phase = "intro"; save(); render(); scrollTo(0, 0); }
 
   // ---------- 그리기 ----------
   function renderTop() {
@@ -482,6 +502,7 @@
   function renderIntro() {
     if (view === "words") return renderWords();
     if (view === "lab") return LAB.render();
+    if (view === "vs") return VS.render();
     const m = mode(), grown = m === "full", n = nextStep(), going = tripGoing(), started = S.stop > 0 || S.step > 1;
     const stars = GUIDES.filter((g) => L[g.id] === "quiz").length;
     $("#main").innerHTML = `
@@ -499,7 +520,8 @@
       ${fold("school", "🏫", "라우의 투자 학교", `${count(BASIC, SCHOOL)} · ⭐ 퀴즈 ${stars}/${GUIDES.length}`, `<p class="foldnote">이익 · 재무제표 · 차트 · 시가총액 · 금리 · 환율 · 물가 · 투자 습관. 한 편씩 보고 퀴즈를 풀어요.</p>${tiles(BASIC, SCHOOL)}`)}
       ${fold("labs", "🔍", `겪어 보기 · ${grown ? "🧑 어른" : "🧒 아이"}`, "진짜 기록으로 한 걸음씩", LAB.buttons(m))}
       ${fold("secret", "🔐", "어른도 잘 모르는 투자 비밀", count(SCHOOL, GUIDES.length), `<p class="foldnote">주문 · 수수료 · 반 토막 · 복리 · 매달 사기 · 분할 · 마음의 함정 · 시장 규칙. 아이와 어른이 같이 봐요!</p>${tiles(SCHOOL, GUIDES.length)}`)}
-      <div class="menu"><button class="big" data-act="words"><span>📖</span><div>투자 말 사전<small>${WORDS.length}개 낱말 · 누르면 라우가 읽어 줘요</small></div></button></div>
+      <div class="menu"><button class="big" data-act="vsopen"><span>🤝</span><div>같이 겨루기<small>컴퓨터 친구 · 가까이 있는 친구와 나란히 보기</small></div></button>
+      <button class="big" data-act="words"><span>📖</span><div>투자 말 사전<small>${WORDS.length}개 낱말 · 누르면 라우가 읽어 줘요</small></div></button></div>
       <p class="note">${SP.supported ? "🔊 소리를 켜면 라우가 읽어 줘요." : "이 브라우저는 소리 읽기를 지원하지 않아요. 엄마·아빠가 읽어 주세요."}<br>교육용 시뮬레이션이에요. 투자 권유가 아니에요.</p>`;
   }
 
@@ -541,15 +563,17 @@
     if (st.end) { S.phase = "end"; save(); L.trip = "seen"; saveL(); cancelTalk(); bubble(""); return render(); }
   }
 
+  // 대사 한 줄 → [화면 글, 읽을 글]
+  const lineOf = (l) => { const t = l.show ? l.show() : typeof l === "function" ? l() : l; return [t, l.voice || t]; };
   function sayLines(st, done) {
-    const lines = st.say.map((l) => (typeof l === "function" ? l() : l));
+    const lines = st.say.map(lineOf);
     let i = 0;
     const show = () => {
       if (i >= lines.length) return done();
-      const line = lines[i];
+      const [line, voice] = lines[i];
       bubble(`${line}<div class="row"><button class="pill ghost" data-act="skip">다음 ▶</button></div>`, st.mood, true);
       skipFn = () => { i++; show(); };
-      speakThen(line, () => { i++; show(); });
+      speakThen(voice, () => { i++; show(); });
     };
     show();
   }
@@ -565,7 +589,7 @@
     const fx = document.createElement("div"); fx.className = "travel"; fx.innerHTML = "<span>🕰️</span>";
     document.body.append(fx);
     bubble(`🕰️ 슝~ 시간 여행 중!<br><b>${dateKo(to)}</b>로 가요`, "happy", false);
-    SP.say("슝, 시간 여행!");
+    SP.say(VOICE.travel);
     ding(true);
     const t0 = performance.now();
     const tick = (t) => {
@@ -585,13 +609,13 @@
     ov.innerHTML = `<div class="newscard" role="dialog" aria-label="뉴스"><span class="em">${n.e}</span><span class="tag">📢 속보</span><h2>${n.t}</h2><p>${n.b}</p><button class="pill" data-act="newsok">알겠어요!</button></div>`;
     newsDone = () => { cancelTalk(); ov.hidden = true; ov.innerHTML = ""; done(); };
     bubble("", "ok");
-    SP.say(`속보! ${n.t} ${n.b}`);
+    SP.say(VOICE.news(n));
   }
   let newsDone = null;
 
   function showPredict(p, done) {
     bubble(`<b>${p.q}</b><div class="opts">${p.opts.map((o, i) => `<button data-act="pred" data-i="${i}">${o}</button>`).join("")}</div>`, "ok", false);
-    speakThen(`${p.q} ${p.opts.join(". ")}`, null);
+    speakThen(VOICE.choose(p.q, p.opts), null);
     predDone = (i) => { cancelTalk(); S.preds[p.key] = i; ding(true); save(); done(); };
   }
   let predDone = null;
@@ -600,6 +624,24 @@
   const FIRST_WHY = ["🏪 무엇을 파는지 알아서", "💰 앞으로 돈을 잘 벌 것 같아서", "🧺 여러 가게에 나눠 담으려고", "📈 값이 오를 것 같아서"];
   const CHANGE_WHY = ["🏪 가게의 장사가 달라진 것 같아서", "📈 값이 올라서", "📉 값이 내려서", "🧺 나눠 담으려고"];
   const CHECK = ["👍 아직 맞는 것 같아", "🤔 달라진 것 같아", "🤷 잘 모르겠어"];
+  // ---------- 같이 겨루기 (kid-vs.js) ----------
+  // 컴퓨터 친구도 아이와 같은 날(1월 · 3월 · 6월 · 11월)에, 그날까지의 값만 보고 정해요
+  const TRADE_DAYS = ["2020-01-02", "2020-03-16", "2020-06-08", "2020-11-09"].map(near);
+  const held = (sh) => SHOPS.filter((s) => (sh?.[s.sym] || 0) * px(s.sym) * KRW / COIN > 0.05).map((s) => s.sym);
+  const VS = window.RAUM_KID_VS({
+    $, c1, shops: SHOPS, whys: FIRST_WHY, changes: CHANGE_WHY,
+    ended: () => tripEnded(),
+    result: () => {
+      const changes = S.log.filter((x) => x.change !== null);
+      return { coins: total(), first: held(S.sh0), last: held(S.sh), why: S.why, changed: Math.min(9, changes.length), change: changes.at(-1)?.change ?? null };
+    },
+    bots: () => window.RAUM_RIVAL.play({ syms: SHOPS.map((s) => s.sym), price: px, points: TRADE_DAYS, now: S.di, start: 10, seed: 2020 }),
+    show: () => { cancelTalk(); view = "vs"; S.phase = "intro"; save(); render(); scrollTo(0, 0); if (tripEnded()) SP.say(VOICE.versus); },
+    home: () => goHome(),
+    trip: () => startTrip(),
+  });
+
+  const recheckQ = (why) => `처음 이유는 "${FIRST_WHY[why]}"였어. 지금도 맞을까?`;
   const changed = (from) => SHOPS.some((s) => Math.abs((S.sh[s.sym] || 0) - (from[s.sym] || 0)) * px(s.sym) * KRW / COIN > 0.01);
 
   function ask(q, opts, done) {
@@ -607,7 +649,7 @@
     tradeRedraw = null;
     renderTrip();
     bubble(`<b>${q}</b><div class="opts">${opts.map((o, i) => `<button data-act="pred" data-i="${i}">${o}</button>`).join("")}</div>`, "ok", false);
-    speakThen(`${q} ${opts.join(". ")}`, null);
+    speakThen(VOICE.choose(q, opts), null);
     predDone = (i) => { cancelTalk(); predDone = null; done(i); };
   }
 
@@ -623,7 +665,7 @@
     };
     draw();
     tradeRedraw = draw;
-    speakThen(st.trade + (st.parent ? ` 엄마 아빠랑 이야기해요. ${st.parent}` : ""), null);
+    speakThen(VOICE.trade(st), null);
     tradeDone = () => {
       cancelTalk();
       tradeDone = null;
@@ -639,7 +681,7 @@
       const recheck = () => {
         const end = () => { S.log = [...S.log.filter((x) => x.stop !== entry.stop), entry]; finish(); };
         if (S.why === null) return end();
-        ask(`처음 이유는 "${FIRST_WHY[S.why]}"였어. 지금도 맞을까?`, CHECK, (i) => { entry.check = i; end(); });
+        ask(recheckQ(S.why), CHECK, (i) => { entry.check = i; end(); });
       };
       if (didChange) return ask("왜 바꿨어?", CHANGE_WHY, (i) => { entry.change = i; recheck(); });
       recheck();
@@ -689,6 +731,7 @@
       <div class="card"><h2>내 동전 10개는?</h2>
         <div class="cmp"><div><span>🧒 내가 한 대로</span><b>${c1(tot)}개</b></div><div><span>📌 1월에 고른 그대로 뒀다면</span><b>${c1(keep)}개</b></div><div><span>🐷 저금통에만 뒀다면</span><b>10개</b></div></div>
         <p class="luck">🍀 동전이 많다고 꼭 잘 고른 건 아니에요. <b>잘 생각해도 내릴 수 있고, 그냥 골라도 오를 수 있어요.</b> 결과에는 운도 섞여 있어요.</p></div>
+      <div class="card"><h2>🤝 같이 겨루기</h2><button class="big go" data-act="vsopen"><span>🤖</span><div>컴퓨터 친구·내 친구와 나란히 보기<small>누가 어떻게 골랐을까?</small></div></button></div>
       <div class="card"><h2>가게들의 1년</h2><div class="cmp">${year.map(({ s, r }) => `<div><span>${s.e} ${s.kid}</span><b class="${r >= 1 ? "up" : "down"}">${moved(r)}</b></div>`).join("")}</div></div>
       <div class="card"><h2>🔍 다음은 직접 비교해 보기</h2>${LAB.buttons()}</div>
       <div class="card"><h2>👨‍👩‍👧 오늘 저녁 이야기</h2><ul>
@@ -705,7 +748,7 @@
       <div class="menu" style="margin-top:14px"><button class="big main" data-act="home"><span>🏠</span><div>처음 화면에서 다음에 할 것 보기</div></button><button class="big go" data-act="restart"><span>🔄</span><div>다시 여행하기<small>이번엔 다르게 골라 볼까?</small></div></button></div>
       <p class="note">교육용 시뮬레이션이에요. 투자 권유가 아니에요. 지나간 값이 앞으로의 값을 알려 주지는 않아요.</p>`;
     bubble("");
-    SP.say("여행 끝! 이번 여행에서 내가 생각한 것들을 다시 살펴봐요.");
+    SP.say(VOICE.tripEnd);
   }
 
   // ---------- 그림 영상 극장 ----------
@@ -748,7 +791,7 @@
         ${n ? nextButton(n) : ""}
         <button class="big" data-act="guide" data-i="${g}"><span>🔁</span><div>다시 보기</div></button>
         <button class="big" data-act="thclose"><span>🏠</span><div>그만 보고 돌아가기</div></button></div></div>`;
-    SP.say(n ? "잘 봤어요! 다음 것도 해 볼까요? 쉬었다 해도 돼요." : "잘 봤어요!");
+    SP.say(n ? VOICE.guideNext : VOICE.guideDone);
   }
 
   // 영상 끝 퀴즈 한 문제 (보기 순서는 매번 섞어요)
@@ -768,7 +811,7 @@
     };
     TH.quiz.draw = draw;
     draw();
-    speakThen(`퀴즈! ${q.q} ${opts.map((o) => o.t).join(". ")}`, null);
+    speakThen(VOICE.quiz(q.q, opts.map((o) => o.t)), null);
   }
   function answerQuiz(i) {
     const Q = TH?.quiz;
@@ -779,7 +822,7 @@
     if (ok) { L[G.id] = "quiz"; saveL(); }
     ding(ok);
     Q.draw();
-    SP.say(`${ok ? "정답!" : `아쉬워요. 정답은 ${G.quiz.a}.`} ${G.quiz.why}`);
+    SP.say(VOICE.answer(G.quiz, ok));
   }
 
   function startTrip() {
@@ -795,6 +838,7 @@
     if (!b || b.disabled) return;
     const a = b.dataset.act;
     if (a === "sound") { SP.setOn(!SP.on); return renderTop(); }
+    if (a.startsWith("vs")) { if (TH) closeGuide(); return VS.act(a, b.dataset); }
     if (a.startsWith("lab")) { if (TH) closeGuide(); return LAB.act(a, b.dataset); }
     if (a === "mode") { L.mode = b.dataset.m; saveL(); render(); return $(`.modes [data-m="${mode()}"]`)?.focus({ preventScroll: true }); }
     if (a === "guide") return openGuide(+b.dataset.i);
@@ -814,9 +858,36 @@
     if (a === "words") { cancelTalk(); view = "words"; S.phase = "intro"; save(); render(); return scrollTo(0, 0); }
     if (a === "home") return goHome();
     if (a === "school") { openFolds.add("school"); goHome(); return $("#fold-school")?.scrollIntoView({ behavior: "smooth" }); }
-    if (a === "word") { const [w, , m] = WORDS[+b.dataset.i]; return SP.say(`${w}. ${m}`); }
-    if (a === "what") { const s = shop(b.dataset.sym); return SP.say(`${s.kid}. 진짜 이름은 ${s.real}. ${s.what}`); }
+    if (a === "word") { const [w, , m] = WORDS[+b.dataset.i]; return SP.say(VOICE.word(w, m)); }
+    if (a === "what") { const s = shop(b.dataset.sym); return SP.say(VOICE.shop(s)); }
   });
+
+  // ---------- 음성 만들기용: 읽을 수 있는 글 모두 (scripts/gen-kid-voice.mjs에서만 불러요) ----------
+  window.RAUM_KID_VOICE_LINES = () => {
+    const out = [VOICE.travel, VOICE.versus, VOICE.tripEnd, VOICE.guideNext, VOICE.guideDone];
+    for (const g of GUIDES) {
+      out.push(...g.scenes.map(([, line]) => line));
+      const q = g.quiz;
+      if (q) out.push(...VOICE.quiz(q.q, [q.a, ...q.no]), ...VOICE.answer(q, true), ...VOICE.answer(q, false));
+    }
+    out.push(...WORDS.map(([w, , m]) => VOICE.word(w, m)), ...SHOPS.map(VOICE.shop));
+    out.push(VOICE.choose("이 가게를 고른 가장 큰 이유는 뭐야?", FIRST_WHY), VOICE.choose("왜 바꿨어?", CHANGE_WHY));
+    out.push(...FIRST_WHY.map((_, i) => VOICE.choose(recheckQ(i), CHECK)));
+    // 가격에 따라 달라지는 대사는 여행 날짜를 순서대로 따라가며 만들어요
+    const saved = S;
+    S = fresh();
+    for (const stop of STOPS) {
+      for (const st of stop.seq) {
+        if (st.travel) { if (st.mark) S.mark = S.di; S.di = Math.max(near(st.travel), S.di); }
+        if (st.say) out.push(...st.say.map((l) => lineOf(l)[1]));
+        if (st.news) out.push(VOICE.news(st.news));
+        if (st.predict) out.push(VOICE.choose(st.predict.q, st.predict.opts));
+        if (st.trade) out.push(VOICE.trade(st));
+      }
+    }
+    S = saved;
+    return { lines: out, labPages: LAB.pages };
+  };
 
   // 시작: 여행 중이던 아이는 그 단계부터 (시간 여행 중이었다면 도착한 상태로)
   if (S.phase === "trip") { S.phase = "intro"; }
